@@ -54,7 +54,7 @@ jobs:
             src/vgui2/vgui_controls/obj_vgui_controls_linux32/release
             src/vscript/obj_vscript_linux32/release
           key: ${{ runner.os }}-${{ steps.get-date.outpts.date }}
-          restore-key: ${ runner.os }}
+          restore-key: ${{ runner.os }}
       - if: runner.os == 'Windows'
         uses: actions/cache@v2
         with:
@@ -67,6 +67,7 @@ jobs:
             src/vgui2/vgui_controls/Release
             src/vscript/Release
           key: ${{ runner.os }}-${{ steps.get-date.outpts.date }}
+          restore-key: ${{ runne.os }}
       
       - if: runner.os == 'Linux'
         run: ls -R
