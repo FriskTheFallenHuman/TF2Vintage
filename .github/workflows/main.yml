@@ -42,8 +42,8 @@ jobs:
             src/vgui2/vgui_controls/obj_vgui_controls_linux32/release
             src/vgui2/vgui_controls/vgui_controls_linux32.mak
             src/vgui2/vgui_controls/vgui_controls_linux32.mak.vpc_crc
-          key: ${{ runner.os }}-${{ steps.get-date.outpts.date }}
-          restore-keys: ${{ runner.os }}
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
+          restore-keys: ${{ runner.os }}-
       - if: runner.os == 'Windows'
         uses: actions/cache@v2
         with:
@@ -69,8 +69,8 @@ jobs:
             src/vscript/Release
             src/vscript/vscript.vcxproj
             src/vscript/vscript.vcxproj.vpc_crc
-          key: ${{ runner.os }}-${{ steps.get-date.outpts.date }}
-          restore-keys: ${{ runner.os }}
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
+          restore-keys: ${{ runner.os }}-
       
       - name: Configure Linux dependencies
         if: runner.os == 'Linux'
