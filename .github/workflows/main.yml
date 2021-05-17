@@ -26,7 +26,7 @@ jobs:
             "src/tier1/obj_tier1_linux32/release"
             "src/vgui2/vgui_controls/obj_vgui_controls_linux32/release"
             "src/vscript/obj_vscript_linux32/release"
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/*.mak') }}
       - if: runner.os == 'Windows'
         uses: actions/cache@v2
         with:
@@ -38,7 +38,7 @@ jobs:
             "src/tier1/Release"
             "src/vgui2/vgui_controls/Release"
             "src/vscript/Release"
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/*.sln') }}
       
       - name: Configure Linux dependencies
         if: runner.os == 'Linux'
