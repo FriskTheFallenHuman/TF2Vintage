@@ -14,6 +14,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - if: runner.os == 'Linux'
+        uses: actions/cache@v2
+        with:
+          path: |
+            "src/game/client/obj_client_tf_linux32/release"
+            "src/game/server/obj_server_tf_linux32/release"
+            "src/mathlib/obj_mathlib_linux32/release"
+            "src/raytrace/obj_raytrace_linux32/release"
+            "src/tier1/obj_tier1_linux32/release"
+            "src/vgui2/vgui_controls/obj_vgui_controls_linux32/release"
+            "src/vscript/obj_vscript_linux32/release"
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      - if: runner.os == 'Windows'
+        uses: actions/cache@v2
+        with:
+          path: |
+            "src/game/client/Release_tf2vintage"
+            "src/game/server/Release_tf2vintage"
+            "src/mathlib/Release"
+            "src/raytrace/Release"
+            "src/tier1/Release"
+            "src/vgui2/vgui_controls/Release"
+            "src/vscript/Release"
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
       
       - name: Configure Linux dependencies
         if: runner.os == 'Linux'
