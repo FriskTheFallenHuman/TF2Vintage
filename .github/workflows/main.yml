@@ -67,7 +67,7 @@ jobs:
             src/vgui2/vgui_controls/Release
             src/vscript/Release
           key: ${{ runner.os }}-${{ steps.get-date.outpts.date }}
-          restore-key: ${{ runne.os }}
+          restore-key: ${{ runner.os }}
       
       - if: runner.os == 'Linux'
         run: ls -R
