@@ -24,6 +24,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
+            game/bin
+            game/tf2vintage/bin
             src/game/client/obj_client_tf_linux32/release
             src/game/client/client_linux32_tf2vintage.mak
             src/game/client/client_linux32_tf2vintage.mak.vpc_crc
@@ -48,6 +50,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
+            game/bin
+            game/tf2vintage/bin
             src/game/client/Release_tf2vintage
             src/game/client/client_tf2vintage.vcxproj
             src/game/client/client_tf2vintage.vcxproj.vpc_crc
