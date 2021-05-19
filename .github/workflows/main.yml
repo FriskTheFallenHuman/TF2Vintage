@@ -26,6 +26,10 @@ jobs:
           path: |
             game/bin
             game/tf2vintage/bin
+            src/lib/public/linux32/mathlib.a
+            src/lib/public/linux32/raytrace.a
+            src/lib/public/linux32/tier1.a
+            src/lib/public/linux32/vgui_controls.a
             src/game/client/obj_client_tf_linux32/release
             src/game/client/client_linux32_tf2vintage.mak
             src/game/client/client_linux32_tf2vintage.mak.vpc_crc
@@ -52,6 +56,14 @@ jobs:
           path: |
             game/bin
             game/tf2vintage/bin
+            src/lib/public/mathlib.lib
+            src/lib/public/mathlib.pdb
+            src/lib/public/raytrace.lib
+            src/lib/public/raytrace.pdb
+            src/lib/public/tier1.lib
+            src/lib/public/tier1.pdb
+            src/lib/public/vgui_controls.lib
+            src/lib/public/vgui_controls.pdb
             src/game/client/Release_tf2vintage
             src/game/client/client_tf2vintage.vcxproj
             src/game/client/client_tf2vintage.vcxproj.vpc_crc
