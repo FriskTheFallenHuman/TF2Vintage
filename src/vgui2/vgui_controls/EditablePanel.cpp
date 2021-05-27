@@ -115,8 +115,7 @@ void EditablePanel::OnChildAdded(VPANEL child)
 //-----------------------------------------------------------------------------
 void EditablePanel::OnKeyCodePressed( KeyCode code )
 {
-	static ConVarRef vgui_nav_lock_default_button( "vgui_nav_lock_default_button" );
-	if ( !vgui_nav_lock_default_button.IsValid() || vgui_nav_lock_default_button.GetInt() == 0 )
+	if ( s_NavLock == 0 )
 	{
 		ButtonCode_t nButtonCode = GetBaseButtonCode( code );
 
@@ -144,7 +143,7 @@ void EditablePanel::OnKeyCodePressed( KeyCode code )
 			case KEY_RIGHT:
 			case KEY_XBUTTON_B:
 				// Navigating menus
-				vgui_nav_lock_default_button.SetValue( 1 );
+				s_NavLock = 1;
 				PostMessage( panel, new KeyValues( "KeyCodePressed", "code", code ) );
 				return;
 			

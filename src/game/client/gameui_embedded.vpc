@@ -1,0 +1,123 @@
+//-----------------------------------------------------------------------------
+//	GAMEUI_EMBEDDED.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Macro SRCDIR		"..\.."
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;.\gameui;.\gameui\panels"
+		$PreprocessorDefinitions		"$BASE;GAMEUI_EXPORTS;GAMEUI_EMBEDDED;GAMEUI_DLL"
+	}
+}
+
+$Project
+{
+	$Folder	"Source Files"
+	{
+		$Folder	"GameUI - Embedded"
+		{
+			$Folder	"Base GameUI"
+			{
+				$File	"vgui_video_player.cpp"
+
+				$File	"gameui\AchievementsDialog.cpp" \
+						"gameui\BitmapImagePanel.cpp" \
+						"gameui\CommandCheckButton.cpp" \
+						"gameui\CvarNegateCheckButton.cpp" \
+						"gameui\CvarSlider.cpp" \
+						"gameui\CvarTextEntry.cpp" \
+						"gameui\CvarToggleCheckButton.cpp" \
+						"gameui\CreateMultiplayerGameBotPage.cpp" \
+						"gameui\CreateMultiplayerGameDialog.cpp" \
+						"gameui\CreateMultiplayerGameGameplayPage.cpp" \
+						"gameui\CreateMultiplayerGameServerPage.cpp" \
+						"gameui\GameConsole.cpp" \
+						"gameui\GameConsoleDialog.cpp" \
+						"gameui\GameUI_Interface.cpp" \
+						"gameui\KeyToggleCheckButton.cpp" \
+						"gameui\LabeledCommandComboBox.cpp" \
+						"gameui\LoadingTipPanel.cpp" \
+						"gameui\ModInfo.cpp" \
+						"gameui\MouseMessageForwardingPanel.cpp" \
+						"gameui\MultiplayerAdvancedDialog.cpp" \
+						"gameui\OptionsDialog.cpp" \
+						"gameui\OptionsSubAudio.cpp" \
+						"gameui\OptionsSubKeyboard.cpp" \
+						"gameui\OptionsSubMouse.cpp" \
+						"gameui\OptionsSubMultiplayer.cpp" \
+						"gameui\OptionsSubVideo.cpp" \
+						"gameui\OptionsSubVoice.cpp" \
+						"gameui\PanelListPanel.cpp" \
+						"gameui\PlayerListDialog.cpp" \
+						"gameui\RunGameEngine.cpp" \
+						"gameui\ScriptObject.cpp" \
+						"gameui\Sys_Utils.cpp" \
+						"gameui\TextEntryBox.cpp" \
+						"gameui\TGAImagePanel.cpp" \
+						"gameui\URLButton.cpp" \
+						"gameui\VControlsListPanel.cpp" \
+						"gameui\VGuiSystemModuleLoader.cpp" \
+						"$SRCDIR\common\language.cpp" \
+						"$SRCDIR\public\crtmemdebug.cpp" \
+						"$SRCDIR\public\filesystem_helpers.cpp" \
+						"$SRCDIR\common\randoverride.cpp" \
+						"$SRCDIR\public\vgui_controls\vgui_controls.cpp"
+				{
+					$Configuration
+					{
+						$Compiler
+						{
+							$Create/UsePrecompiledHeader	"Not Using Precompiled Headers"
+						}
+					}
+				}	
+			}
+			
+			$Folder	"Base Panels GameUI"
+			{
+				$File	"gameui\panels\basemodframe.cpp"
+				$File	"gameui\panels\basemodpanel.cpp"
+				$File	"gameui\panels\uigamedata.cpp"
+				$File	"gameui\panels\ui_defines.h"
+
+				$Folder	"VPanels"
+				{
+					$File	"gameui\panels\vdropdownmenu.cpp" \
+							"gameui\panels\vflyoutmenu.cpp" \
+							"gameui\panels\vgenericconfirmation.cpp" \
+							"gameui\panels\vgenericpanellist.cpp" \
+							"gameui\panels\vhybridbutton.cpp" \
+							"gameui\panels\vingamemainmenu.cpp" \
+							"gameui\panels\vloadingprogress.cpp" \
+							"gameui\panels\vmainmenu.cpp" \
+							"gameui\panels\vmenubackground.cpp" \
+							"gameui\panels\vslidercontrol.cpp"
+				}
+				
+				$Folder	"Buttons"
+				{
+					$File	"gameui\panels\nb_header_footer.cpp"
+				}
+			}
+		}
+	}
+
+	$Folder	"Public Header Files"
+	{
+		$File	"$SRCDIR\public\iachievementmgr.h"
+		$File	"$SRCDIR\public\game\client\IGameClientExports.h"
+		$File	"$SRCDIR\common\ServerBrowser\IServerBrowser.h"
+		$File	"$SRCDIR\common\GameUI\IGameUI.h"
+		$File	"$SRCDIR\public\IGameUIFuncs.h"
+		$File	"$SRCDIR\public\tier1\interface.h"
+		$File	"$SRCDIR\common\IRunGameEngine.h"
+		$File	"$SRCDIR\common\IVGuiModule.h"
+		$File	"$SRCDIR\common\IVGuiModuleLoader.h"
+		$File	"$SRCDIR\common\language.h"
+	}
+}

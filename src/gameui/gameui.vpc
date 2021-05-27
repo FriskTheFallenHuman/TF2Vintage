@@ -1,0 +1,35 @@
+//-----------------------------------------------------------------------------
+//	GAMEUI.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+$Macro SRCDIR		".."
+
+$Macro OUTBINNAME	"gameui"
+$Macro OUTBINDIR	"$SRCDIR\..\game\vectronic\bin"
+
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+
+$Configuration
+{
+
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;.\;$SRCDIR\common\GameUI;$SRCDIR\public"
+		$PreprocessorDefinitions		"$BASE;"
+	}
+
+}
+
+$Project "GameUI"
+{
+	
+	$File "gameui_stub.cpp"
+
+
+	$Folder	"Link Libraries"
+	{
+ 	}
+}

@@ -9,6 +9,7 @@ $Macro GAMENAME 	"tf2vintage" [!$SOURCESDK]
 $Macro GAMENAME 	"tf2vintage" [$SOURCESDK]
 
 $Include "$SRCDIR\game\client\client_base.vpc"
+$Include "$SRCDIR\game\client\gameui_embedded.vpc"
 
 $Configuration
 {
@@ -254,85 +255,12 @@ $Project "Client (TF)"
 			
 			$Folder	"vgui"
 			{
-				$Folder	"Controls"
-				{
-					$File	"tf\vgui\controls\tf_advbutton.cpp"
-					$File	"tf\vgui\controls\tf_advbutton.h"
-					$File	"tf\vgui\controls\tf_advbuttonbase.cpp"
-					$File	"tf\vgui\controls\tf_advbuttonbase.h"
-					$File	"tf\vgui\controls\tf_advcheckbutton.cpp"
-					$File	"tf\vgui\controls\tf_advcheckbutton.h"
-					$File	"tf\vgui\controls\tf_advitembutton.cpp"
-					$File	"tf\vgui\controls\tf_advitembutton.h"
-					$File	"tf\vgui\controls\tf_advmodelpanel.cpp"
-					$File	"tf\vgui\controls\tf_advmodelpanel.h"
-					$File	"tf\vgui\controls\tf_advpanellistpanel.cpp"
-					$File	"tf\vgui\controls\tf_advpanellistpanel.h"
-					$File	"tf\vgui\controls\tf_advslider.cpp"
-					$File	"tf\vgui\controls\tf_advslider.h"
-					$File	"tf\vgui\controls\tf_advtabs.cpp"
-					$File	"tf\vgui\controls\tf_advtabs.h"
-					$File	"tf\vgui\controls\tf_cvarcombobox.cpp"
-					$File	"tf\vgui\controls\tf_cvarcombobox.h"
-					$File	"tf\vgui\controls\tf_cvarslider.cpp"
-					$File	"tf\vgui\controls\tf_cvarslider.h"
-					$File	"tf\vgui\controls\tf_cvartextentry.cpp"
-					$File	"tf\vgui\controls\tf_cvartextentry.h"
-					$File	"tf\vgui\controls\tf_cvartogglecheckbutton.cpp"
-					$File	"tf\vgui\controls\tf_cvartogglecheckbutton.h"
-					$File	"tf\vgui\controls\tf_rotatingpanel.cpp"
-					$File	"tf\vgui\controls\tf_rotatingpanel.h"
-					$File	"tf\vgui\controls\tf_scriptobject.cpp"
-					$File	"tf\vgui\controls\tf_scriptobject.h"
-					$File	"tf\vgui\controls\tf_vcontrolslistpanel.cpp"
-					$File	"tf\vgui\controls\tf_vcontrolslistpanel.h"
-				}	
-				
-				$Folder	"Panels"
-				{				
-					$File	"tf\vgui\panels\tf_backgroundpanel.cpp"
-					$File	"tf\vgui\panels\tf_backgroundpanel.h"
-					$File	"tf\vgui\panels\tf_dialogpanelbase.cpp"
-					$File	"tf\vgui\panels\tf_dialogpanelbase.h"
-					$File	"tf\vgui\panels\tf_itemselectionpanel.cpp"
-					$File	"tf\vgui\panels\tf_itemselectionpanel.h"
-					$File	"tf\vgui\panels\tf_itemtooltippanel.cpp"
-					$File	"tf\vgui\panels\tf_itemtooltippanel.h"
-					$File	"tf\vgui\panels\tf_loadoutpanel.cpp"
-					$File	"tf\vgui\panels\tf_loadoutpanel.h"
-					$File	"tf\vgui\panels\tf_mainmenupanel.cpp"
-					$File	"tf\vgui\panels\tf_mainmenupanel.h"
-					$File	"tf\vgui\panels\tf_menupanelbase.cpp"
-					$File	"tf\vgui\panels\tf_menupanelbase.h"
-					$File	"tf\vgui\panels\tf_optionsadvancedpanel.cpp"
-					$File	"tf\vgui\panels\tf_optionsadvancedpanel.h"
-					$File	"tf\vgui\panels\tf_optionsaudiopanel.cpp"
-					$File	"tf\vgui\panels\tf_optionsaudiopanel.h"
-					$File	"tf\vgui\panels\tf_optionsdialog.cpp"
-					$File	"tf\vgui\panels\tf_optionsdialog.h"
-					$File	"tf\vgui\panels\tf_optionskeyboardpanel.cpp"
-					$File	"tf\vgui\panels\tf_optionskeyboardpanel.h"
-					$File	"tf\vgui\panels\tf_optionsmousepanel.cpp"
-					$File	"tf\vgui\panels\tf_optionsmousepanel.h"
-					$File	"tf\vgui\panels\tf_optionsvideopanel.cpp"
-					$File	"tf\vgui\panels\tf_optionsvideopanel.h"
-					$File	"tf\vgui\panels\tf_pausemenupanel.cpp"
-					$File	"tf\vgui\panels\tf_pausemenupanel.h"
-					$File	"tf\vgui\panels\tf_tooltippanel.cpp"
-					$File	"tf\vgui\panels\tf_tooltippanel.h"
-					$File	"tf\vgui\panels\tf_quitdialogpanel.cpp"
-					$File	"tf\vgui\panels\tf_quitdialogpanel.h"
-					$File	"tf\vgui\panels\tf_shadebackgroundpanel.cpp"
-					$File	"tf\vgui\panels\tf_shadebackgroundpanel.h"
-					$File	"tf\vgui\panels\tf_statsummarydialog.cpp"
-					$File	"tf\vgui\panels\tf_statsummarydialog.h"
-				}	
-				
 				$Folder	"Unused"
 				{
 					$File	"tf\vgui\tf_overview.cpp"
 					$File	"tf\vgui\tf_overview.h"	
-				}	
+				}
+
 				$File	"tf\vgui\backgroundpanel.cpp"
 				$File	"tf\vgui\backgroundpanel.h"
 				$File	"tf\vgui\ObjectControlPanel.cpp"
@@ -349,10 +277,6 @@ $Project "Client (TF)"
 				$File	"tf\vgui\tf_imagepanel.h"
 				$File	"tf\vgui\tf_intromenu.cpp"
 				$File	"tf\vgui\tf_intromenu.h"
-				$File	"tf\vgui\tf_mainmenu.cpp"
-				$File	"tf\vgui\tf_mainmenu.h"
-				$File	"tf\vgui\tf_mainmenu_interface.cpp"
-				$File	"tf\vgui\tf_mainmenu_interface.h"
 				$File	"tf\vgui\tf_mapinfomenu.cpp"
 				$File	"tf\vgui\tf_mapinfomenu.h"
 				$File	"tf\vgui\tf_roundinfo.cpp"
@@ -375,7 +299,7 @@ $Project "Client (TF)"
 				$File	"tf\vgui\vgui_rotation_slider.cpp"
 				$File	"tf\vgui\vgui_rotation_slider.h"
 			}
-			
+
 			$Folder	"Shared"
 			{
 				$Folder	"Weapons"
@@ -440,6 +364,7 @@ $Project "Client (TF)"
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_grapplinghook.cpp"
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_grapplinghook.h"
 					}
+
 					$Folder	"Classic Content"
 					{
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_crowbar.cpp"
@@ -459,6 +384,7 @@ $Project "Client (TF)"
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_hammerfists.cpp"
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_hammerfists.h"	
 					}
+
 					$Folder "Grenades"
 					{
 						$File	"$SRCDIR\game\shared\tf\tf_weaponbase_grenade.cpp"
@@ -484,6 +410,7 @@ $Project "Client (TF)"
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_mirv.cpp"
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_mirv.h"
 					}
+
 					$Folder	"Base TF2"
 					{
 						$File	"$SRCDIR\game\shared\tf\tf_weapon_bat.cpp"
@@ -548,6 +475,7 @@ $Project "Client (TF)"
 						$File	"$SRCDIR\game\shared\tf\tf_weaponbase_rocket.h"
 					}
 				}
+
 				$File	"$SRCDIR\game\shared\tf\achievements_tf.cpp"
 				$File	"$SRCDIR\game\shared\tf\baseobject_shared.cpp"
 				$File	"$SRCDIR\game\shared\tf\baseobject_shared.h"

@@ -358,6 +358,22 @@ bool CEngineSprite::IsVideo()
 }
 
 //-----------------------------------------------------------------------------
+// Is the sprite a bik video sprite?
+//-----------------------------------------------------------------------------
+bool CEngineSprite::IsBIK()
+{
+	return ( m_hBIKMaterial != BIKMATERIAL_INVALID );
+}
+
+//-----------------------------------------------------------------------------
+// Is the sprite a avi video sprite?
+//-----------------------------------------------------------------------------
+bool CEngineSprite::IsAVI()
+{
+	return ( m_hAVIMaterial != AVIMATERIAL_INVALID );
+}
+
+//-----------------------------------------------------------------------------
 // Returns the texture coordinate range	used to draw the sprite
 //-----------------------------------------------------------------------------
 void CEngineSprite::GetTexCoordRange( float *pMinU, float *pMinV, float *pMaxU, float *pMaxV )
