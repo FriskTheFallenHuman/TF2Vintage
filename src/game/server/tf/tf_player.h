@@ -506,7 +506,7 @@ public:
 	void				ValidateWeapons( bool bRegenerate );
 	void				ValidateWeaponSlots( void );
 	
-	bool 				ValidateCurrentSlot(CEconItemView * pItem, int iSlot);
+	bool 				ValidateCurrentSlot(CEconItemView * pNewItem, int iSlot);
 	void 				ModifyWeaponMeters(CTFWeaponBase* pWeapon);
 	
 	void				ValidateWearables( void );
