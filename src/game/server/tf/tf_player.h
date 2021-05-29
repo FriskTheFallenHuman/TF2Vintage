@@ -502,10 +502,16 @@ public:
 	virtual void		Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget, const Vector *pVelocity );
 
 	bool				ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWeaponBase *pWeapon = NULL );
+	
 	void				ValidateWeapons( bool bRegenerate );
-	void				ValidateWearables( void );
 	void				ValidateWeaponSlots( void );
+	
+	bool 				ValidateCurrentSlot(CEconItemView * pItem, int iSlot);
+	void 				ModifyWeaponMeters(CTFWeaponBase* pWeapon);
+	
+	void				ValidateWearables( void );
 	void				ValidateWearableSlots( void );
+	
 	void				ManageRegularWeapons( TFPlayerClassData_t *pData );
 	//void				ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData );
 	void				ManageRandomWeapons( TFPlayerClassData_t *pData );

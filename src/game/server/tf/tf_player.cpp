@@ -160,6 +160,7 @@ ConVar tf2v_allow_cut_weapons( "tf2v_allow_cut_weapons", "1", FCVAR_NOTIFY, "All
 ConVar tf2v_allow_multiclass_weapons( "tf2v_allow_multiclass_weapons", "1", FCVAR_NOTIFY, "Allows players to use multi-class variants of weapons, such as shotguns." );
 
 ConVar tf2v_bonus_distance_range( "tf2v_bonus_distance_range", "10", FCVAR_NOTIFY, "Percent variation in range calculations for damage." );
+ConVar tf2v_use_linear_damage("tf2v_use_linear_damage", "0", FCVAR_NOTIFY, "Replaces the splines with linear slopes in damage calculations.");
 ConVar tf2v_enforce_whitelist( "tf2v_enforce_whitelist", "0", FCVAR_NOTIFY, "Requires items to be verified from a server whitelist." );
 
 ConVar tf2v_force_stock_weapons( "tf2v_force_stock_weapons", "0", FCVAR_NOTIFY, "Forces players to use the stock loadout." );
@@ -1632,13 +1633,6 @@ void CTFPlayer::InitClass( void )
 	m_PlayerAnimState->SetRunSpeed( GetPlayerClass()->GetMaxSpeed() );
 	m_PlayerAnimState->SetWalkSpeed( GetPlayerClass()->GetMaxSpeed() * 0.5 );
 
-	if ( m_bRegenerating )
-	{
-		CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>( Weapon_OwnsThisID( TF_WEAPON_INVIS ) );
-		if ( pInvis && pInvis->HasFeignDeath() )
-			pInvis->CleanUpInvisibility();
-	}
-
 	// Give default items for class.
 	GiveDefaultItems();
 
@@ -1778,20 +1772,22 @@ bool CTFPlayer::ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWea
 {
 	if ( pItem1 && pItem2 )
 	{
-
+		// For Weapons:
 		// Item might have different entities for each class (i.e. shotgun).
 		int iClass = m_PlayerClass.GetClassIndex();
 		const char* pszClass1 = TranslateWeaponEntForClass(pItem1->GetEntityName(), iClass);
 		const char* pszClass2 = TranslateWeaponEntForClass(pItem2->GetEntityName(), iClass);
-
-		if (V_strcmp(pszClass1, pszClass2) != 0)
-			return false;
-
-		// In case we're something other than a weapon, or checking the weapon doesn't work.
+		if (pszClass1 != NULL || pszClass2 != NULL) // This is a named weapon entity, check it.
+		{
+			if (V_strcmp(pszClass1, pszClass2) != 0)
+				return false;
+		}
+		
+		// Allows us to check the item definition, which also works with wearables.
 		int nItemIndex1 = pItem1->GetItemDefIndex();
 		int nItemIndex2 = pItem2->GetItemDefIndex();
-		if (nItemIndex1 && nItemIndex2)
-			return (nItemIndex1 == nItemIndex2);
+		if (nItemIndex1 == nItemIndex2)
+			return true;
 	}
 
 	return false;
@@ -1813,11 +1809,6 @@ void CTFPlayer::GiveDefaultItems()
 	}
 
 	RemoveAllAmmo();
-	
-	// If we got the Dead Ringer for some reason, disable it.
-	CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>( Weapon_OwnsThisID( TF_WEAPON_INVIS ) );
-	if ( pInvis && pInvis->HasFeignDeath() )
-		pInvis->CleanUpInvisibility();
 
 	// Give ammo. Must be done before weapons, so weapons know the player has ammo for them.
 	for ( int iAmmo = 0; iAmmo < TF_AMMO_COUNT; ++iAmmo )
@@ -2025,6 +2016,92 @@ void CTFPlayer::ManageBuilderWeapons( TFPlayerClassData_t *pData )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Do real-time validation on the current slot. True means new item.
+//-----------------------------------------------------------------------------
+bool CTFPlayer::ValidateCurrentSlot(CEconItemView* pItem, int iSlot)
+{
+	CTFWeaponBase* pCurWeapon = static_cast<CTFWeaponBase*>( Weapon_GetSlot(iSlot) );
+	CTFWearable *pCurWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot(iSlot) );
+	CEconItemView* pCurrentLoadoutItem = NULL;
+	if (pCurWeapon)
+	{
+		pCurrentLoadoutItem = pCurWeapon->GetItem();
+	}
+	else if (pCurWearable)
+	{
+		pCurrentLoadoutItem = pCurWearable->GetItem();
+	}
+	if (pCurrentLoadoutItem)
+	{
+		if ( !ItemsMatch( pCurrentLoadoutItem, pItem ) )
+		{
+			// This is a new item, nuke the old one just in case we haven't done this already.
+			if (pCurWeapon)
+			{
+				ModifyWeaponMeters(pCurWeapon);
+										
+				// Holster our active weapon
+				if (pCurWeapon == GetActiveWeapon())
+				pCurWeapon->Holster();
+
+				Weapon_Detach(pCurWeapon);
+				UTIL_Remove(pCurWeapon);
+			}
+			else if (pCurWearable)
+			{
+				RemoveWearable(pCurWearable);
+				UTIL_Remove(pCurWearable);
+			}
+			return true;
+		}
+		else
+		{
+			// No need to give us the same item, so reset it.
+			if (pCurWeapon)
+			{
+				pCurWeapon->ChangeTeam( GetTeamNumber() );
+				pCurWeapon->GiveDefaultAmmo();
+				if ( m_bRegenerating == false )
+				{
+					pCurWeapon->WeaponReset();
+				}
+			}
+			return false;
+		}
+	}
+	return true; // Default failsafe.
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Modified the Weapon Meters on new items.
+//-----------------------------------------------------------------------------
+void CTFPlayer::ModifyWeaponMeters(CTFWeaponBase* pWeapon)
+{
+	CTFWeaponInvis* pWatch = NULL;
+
+	switch (pWeapon->GetWeaponID())
+	{
+	case TF_WEAPON_BUFF_ITEM:
+		// Reset rage
+		m_Shared.ResetRageSystem();
+		break;
+	case TF_WEAPON_PEP_BRAWLER_BLASTER:
+	case TF_WEAPON_SODA_POPPER:
+		// Reset hype/boost
+		m_Shared.SetHypeMeterAbsolute(0);
+		break;
+	case TF_WEAPON_INVIS:
+		// Reset our cloak.
+		pWatch = dynamic_cast<CTFWeaponInvis*>(pWeapon);
+		if (pWatch)
+			pWatch->CleanUpInvisibility();
+		break;
+	default:
+		break;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFPlayer::ValidateWeapons( bool bRegenerate )
@@ -2051,26 +2128,8 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
 			{
 
-				if ( pWeapon->GetWeaponID() == TF_WEAPON_BUFF_ITEM )
-				{
-					// Reset rage
-					m_Shared.ResetRageSystem();
-
-					// **HACK: Extra wearables aren't dying correctly sometimes so
-					// try and remove them here just in case ValidateWearables() fails
-					CEconWearable *pWearable = GetWearableForLoadoutSlot( iSlot );
-					if ( pWearable )
-					{
-						RemoveWearable( pWearable );
-					}
-				}
+				ModifyWeaponMeters(pWeapon);
 				
-				if ( pWeapon->GetWeaponID() == TF_WEAPON_PEP_BRAWLER_BLASTER || pWeapon->GetWeaponID() == TF_WEAPON_SODA_POPPER )
-				{
-					// Reset hype/boost
-					m_Shared.SetHypeMeterAbsolute( 0 );
-				}
-
 				// If this is not a weapon we're supposed to have in this loadout slot then nuke it.
 				// Either changed class or changed loadout.
 				if ( pWeapon == GetActiveWeapon() )
@@ -2088,6 +2147,73 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 				{
 					pWeapon->WeaponReset();
 				}
+			}
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Validates weapon slots.
+//-----------------------------------------------------------------------------
+void CTFPlayer::ValidateWeaponSlots(void)
+{
+	int iClass = m_PlayerClass.GetClassIndex();
+	// Validate weapons by slot.
+	for (int i = 0; i < TF_PLAYER_WEAPON_COUNT; ++i)
+	{
+		CTFWeaponBase* pWeapon = static_cast<CTFWeaponBase*>(Weapon_GetSlot(i));
+		if (pWeapon == nullptr)
+			continue;
+
+		// Skip builder as we'll handle it separately.
+		if (pWeapon->IsWeapon(TF_WEAPON_BUILDER))
+			continue;
+
+		CEconItemDefinition* pItemDef = pWeapon->GetItem()->GetStaticData();
+
+		if (pItemDef)
+		{
+			int iSlot = pItemDef->GetLoadoutSlot(iClass);
+			CEconItemView* pLoadoutItem = GetLoadoutItem(iClass, iSlot);
+
+			if (!ItemsMatch(pWeapon->GetItem(), pLoadoutItem, pWeapon))
+			{
+				
+				ModifyWeaponMeters(pWeapon);
+				
+				// Holster our active weapon
+				if (pWeapon == GetActiveWeapon())
+					pWeapon->Holster();
+
+				Weapon_Detach(pWeapon);
+				UTIL_Remove(pWeapon);
+			}
+		}
+	}
+
+	// Validate wearables by slot.
+	for (int i = 0; i < TF_PLAYER_WEAPON_COUNT; ++i)
+	{
+		if (!GetWearableForLoadoutSlot(i))
+			continue;
+
+		CTFWearable* pWearable = static_cast<CTFWearable*>(GetWearableForLoadoutSlot(i));
+
+		if (pWearable == nullptr)
+			continue;
+
+		CEconItemDefinition* pItemDef = pWearable->GetItem()->GetStaticData();
+
+		if (pItemDef)
+		{
+			int iSlot = pItemDef->GetLoadoutSlot(iClass);
+			CEconItemView* pLoadoutItem = GetLoadoutItem(iClass, iSlot);
+
+			if (!ItemsMatch(pWearable->GetItem(), pLoadoutItem))
+			{
+				// Not supposed to carry this wearable, nuke it.
+				RemoveWearable(pWearable);
+				UTIL_Remove(pWearable);
 			}
 		}
 	}
@@ -2121,110 +2247,20 @@ void CTFPlayer::ValidateWearables( void )
 		}
 	}
 }
-	
-//-----------------------------------------------------------------------------
-// Purpose: Validates weapon slots.
-//-----------------------------------------------------------------------------
-void CTFPlayer::ValidateWeaponSlots( void )
-{
-	int iClass = m_PlayerClass.GetClassIndex();
-	// Validate weapons by slot.
-	for ( int i = 0; i < TF_PLAYER_WEAPON_COUNT; ++i )
-	{	
-		CTFWeaponBase *pWeapon = assert_cast<CTFWeaponBase *>( GetWeapon( i ) );
-		if ( pWeapon == nullptr )
-			continue;
-			
-		// Skip builder as we'll handle it separately.
-		if ( pWeapon->IsWeapon( TF_WEAPON_BUILDER ) )
-			continue;
-			
-		CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
-
-		if ( pItemDef )
-		{
-			int iSlot = pItemDef->GetLoadoutSlot( iClass );
-			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
-
-			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
-			{
-				// Holster our active weapon
-				if ( pWeapon == GetActiveWeapon() )
-				pWeapon->Holster();
-
-				Weapon_Detach( pWeapon );
-				UTIL_Remove( pWeapon );		
-			}
-		}
-	}
-	
-	// Validate wearables by slot.
-	for ( int i = 0; i < TF_PLAYER_WEAPON_COUNT; ++i )
-	{	
-		if (!GetWearableForLoadoutSlot( i ))
-		continue;
-		
-		CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( i ) );
-
-		if ( pWearable == nullptr )
-			continue;
-			
-		CEconItemDefinition *pItemDef = pWearable->GetItem()->GetStaticData();
-
-		if ( pItemDef )
-		{
-			int iSlot = pItemDef->GetLoadoutSlot( iClass );
-			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
-
-			if (!ItemsMatch(pWearable->GetItem(), pLoadoutItem))
-			{
-				// Not supposed to carry this wearable, nuke it.
-				RemoveWearable(pWearable);
-				UTIL_Remove(pWearable);
-			}
-		}
-	}
-}
 
 //-----------------------------------------------------------------------------
-// Purpose: Validates acosmetic slots.
+// Purpose: Validates cosmetic slots.
 //-----------------------------------------------------------------------------
 void CTFPlayer::ValidateWearableSlots( void )
 {
 	int iClass = m_PlayerClass.GetClassIndex();
-	// Validate weapons by slot.
-	for ( int i = TF_FIRST_COSMETIC_SLOT; i <= TF_LAST_COSMETIC_SLOT; ++i )
-	{	
-		CTFWeaponBase *pWeapon = assert_cast<CTFWeaponBase *>( GetWeapon( i ) );
-		if ( pWeapon == nullptr )
-			continue;
-			
-		CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
-
-		if ( pItemDef )
-		{
-			int iSlot = pItemDef->GetLoadoutSlot( iClass );
-			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
-
-			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
-			{
-				// Holster our active weapon
-				if ( pWeapon == GetActiveWeapon() )
-				pWeapon->Holster();
-
-				Weapon_Detach( pWeapon );
-				UTIL_Remove( pWeapon );		
-			}
-		}
-	}
-	
 	// Validate wearables by slot.
 	for ( int i = TF_FIRST_COSMETIC_SLOT; i <= TF_LAST_COSMETIC_SLOT; ++i )
 	{	
 		if (!GetWearableForLoadoutSlot( i ))
 			continue;
 		
-		CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( i ) );
+		CTFWearable *pWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot( i ) );
 		
 		if ( pWearable == nullptr )
 			continue;
@@ -2254,9 +2290,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 	CBaseCombatWeapon *pActiveWeapon = m_hActiveWeapon.Get();
 
 	// Validate our inventory.
-	ValidateWearables();
-	ValidateWeapons( true );
-	ValidateWeaponSlots();
+	// ValidateWeapons( true );
 
 	for (int iSlot = 0; iSlot < TF_PLAYER_WEAPON_COUNT; ++iSlot)
 	{
@@ -2378,19 +2412,21 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 				}
 			}
 			
-			CEconEntity* pEntity = dynamic_cast<CEconEntity*>(GiveNamedItem(pszClassname, 0, pItem));
-			if ( pEntity )
+			// Run this right before giving ourselves the item as a check if this is a fresh item.
+			bool bFreshEquip = ValidateCurrentSlot(pItem, iSlot);
+			if (bFreshEquip)
 			{
-				pEntity->GiveTo( this );
+				CEconEntity* pEntity = dynamic_cast<CEconEntity*>(GiveNamedItem(pszClassname, 0, pItem));
+				if ( pEntity )
+				{
+					pEntity->GiveTo( this );
+				}
 			}
 		}
 	}
 
-	// Check if we still have any items (such as wearables) we shouldn't have.
-	ValidateWeaponSlots();
 	// We may have added weapons that make others invalid. Recheck.
-	ValidateWeapons( false );
-	
+	//ValidateWeapons( false );
 
 	if ( m_hActiveWeapon.Get() && pActiveWeapon != m_hActiveWeapon )
 	{
@@ -2559,27 +2595,8 @@ void CTFPlayer::ManageGrenades( TFPlayerClassData_t *pData )
 //-----------------------------------------------------------------------------
 void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 {
-	if ( !tf2v_allow_cosmetics.GetBool() )
-	{
-		// Cosmetics disabled, nuke any cosmetic wearables we have.
-		for ( int i = TF_FIRST_COSMETIC_SLOT; i <= TF_LAST_COSMETIC_SLOT; ++i )
-		{	
-			if (!GetWearableForLoadoutSlot( i ))
-				continue;
-			
-			CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( i ) );
-			
-			if ( pWearable == nullptr )
-				continue;
-
-			RemoveWearable(pWearable);
-			UTIL_Remove(pWearable);
-		}
-		return;
-	}	
-	
 	// Make sure we're allowed to have something here.
-	ValidateWearableSlots();
+	// ValidateWearables();
 
 	// Give ourselves zombie skins when it's Halloween.
 	ManagePlayerEventCosmetic( pData );
@@ -2589,6 +2606,26 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 	{
 		ManageVIPMedal( pData );
 	}
+
+	if (!tf2v_allow_cosmetics.GetBool())
+	{
+		// Cosmetics disabled, nuke any cosmetic wearables we have.
+		for (int i = TF_FIRST_COSMETIC_SLOT; i <= TF_LAST_COSMETIC_SLOT; ++i)
+		{
+			if (!GetWearableForLoadoutSlot(i))
+				continue;
+
+			CTFWearable* pWearable = assert_cast<CTFWearable*>(GetWearableForLoadoutSlot(i));
+
+			if (pWearable == nullptr)
+				continue;
+
+			RemoveWearable(pWearable);
+			UTIL_Remove(pWearable);
+		}
+		return;
+	}
+
 	
 	for (int iSlot = TF_FIRST_COSMETIC_SLOT; iSlot <= TF_LAST_COSMETIC_SLOT; ++iSlot)
 	{
@@ -2702,16 +2739,23 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 				continue;
 			}
 			
-			CEconEntity *pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
-
-			if ( pEntity )
+			// Run this right before giving ourselves the item as a check if this is a fresh item.
+			bool bFreshEquip = ValidateCurrentSlot(pItem, iSlot);
+			if (bFreshEquip)
 			{
-				pEntity->GiveTo( this );
+				CEconEntity *pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
+				if ( pEntity )
+				{
+					pEntity->GiveTo( this );
+				}
 			}
 
 		}
 		
 	}
+
+	// Refresh to make sure we don't have something we're not supposed to.
+	//ValidateWearables();
 
 }
 
@@ -5824,7 +5868,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		}
 		
 		// Newer stickybomb launchers have damage falloff nerf.
-		if ( tf2v_use_new_demo_explosion_variance.GetInt() )
+		if ( tf2v_use_new_demo_explosion_variance.GetInt() > 0 )
 		{
 			if ( pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER )	
 			{
@@ -5836,7 +5880,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		// Distance falloff calculations
 		if ( bitsDamage & DMG_USEDISTANCEMOD )
 		{
-			float flRandomDamage = info.GetDamage() * tf_damage_range.GetFloat();
+			float flRandomDamage = info.GetDamage() * tf_damage_range.GetFloat(); // Damage range is 0.5 for 50% random damage.
 			if ( tf_damage_lineardist.GetBool() )
 			{
 				float flBaseDamage = info.GetDamage() - flRandomDamage;
@@ -5850,10 +5894,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			}
 			else
 			{
-				float flCenter = 0.5;
-				float flCenVar = ( tf2v_bonus_distance_range.GetFloat() / 100 ) ;	
-				float flMin = flCenter - flCenVar;
-				float flMax = flCenter + flCenVar;
+				float flCenter = 0.5; // Halfway, or optimal damage for 100%.
+				float flCenVar = ( tf2v_bonus_distance_range.GetFloat() / 100 ) ; // Default is +/- 10% damage	
 
 				float flDistance = Max( 1.0f, ( WorldSpaceCenter() - pAttacker->WorldSpaceCenter() ).Length() );
 				float flOptimalDistance = 512.0;
@@ -5861,11 +5903,12 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				if ( tf2v_new_sentry_damage_falloff.GetBool())
 				{
 					// Is this damage from a sentry gun?
-					if ( dynamic_cast<CObjectSentrygun *>( pInflictor ) )
+					if ( dynamic_cast<CObjectSentrygun *>( pInflictor ) != NULL )
 						flOptimalDistance = 1100; // Maximum range of the sentry gun.
 				}
 
-				flCenter = RemapValClamped( flDistance / flOptimalDistance, 0.0, 2.0, 1.0, 0.0 );
+				// Now we modify flCenter to get the new range we're at.
+				flCenter = RemapValClamped(flDistance, 0.0, (2.0 * flOptimalDistance), 1.0, 0.0); // Spline (default)
 				if ( bitsDamage & DMG_NOCLOSEDISTANCEMOD )
 				{
 					if ( flCenter > 0.5 )
@@ -5878,78 +5921,94 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				if ( pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW )
 				{
 					// If we're a crossbow, change our falloff band so that our 100% is at long range.
-					flCenter = RemapVal( flDistance / flOptimalDistance, 0.0, 2.0, 0.0, 0.5 );
-				}
-					
-				flMin = ( 0.0 > (flCenter + flCenVar) ? 0.0 : (flCenter + flCenVar) ); // Our version of MAX.
-				flMax = ( 1.0 < (flCenter + flCenVar) ? 1.0 : (flCenter - flCenVar) ); // Our version of MIN.
-
-				if ( bDebug )
-				{
-					Warning( "    RANDOM: Dist %.2f, Ctr: %.2f, Min: %.2f, Max: %.2f\n", flDistance, flCenter, flMin, flMax );
+					flCenter = RemapVal( flDistance, 0.0, (2.0 * flOptimalDistance), 0.0, 0.5 );
 				}
 
-				//Msg("Range: %.2f - %.2f\n", flMin, flMax );
 				float flRandomVal;
-
-				if ( tf_damage_disablespread.GetBool() )
+				if ( tf_damage_disablespread.GetBool() || (!flCenVar) )
 				{
+					if ( bDebug )
+					{
+						Warning( "    STATIC: Dist %.2f, Ctr: %.2f\n", flDistance, flCenter);
+					}
+
 					flRandomVal = flCenter;
 				}
 				else
 				{
+					// Use our flCenter distance, and add variance with flCenVar.
+					float flMin = Max( 0.0f, (flCenter - flCenVar));
+					float flMax = Min( 1.0f, (flCenter + flCenVar));
+
+					if ( bDebug )
+					{
+						//Msg("Range: %.2f - %.2f\n", flMin, flMax );
+						Warning( "    RANDOM: Dist %.2f, Ctr: %.2f, Min: %.2f, Max: %.2f\n", flDistance, flCenter, flMin, flMax );
+					}
+				
 					flRandomVal = RandomFloat( flMin, flMax );
 				}
 
-				if ( flRandomVal > 0.5 )
+				// Rocket launcher, Sticky launcher and Scattergun have different short range bonuses
+				if (pWeapon)
 				{
-					// Rocket launcher, Sticky launcher and Scattergun have different short range bonuses
-					if ( pWeapon )
+					switch (pWeapon->GetWeaponID())
 					{
-						switch ( pWeapon->GetWeaponID() )
+					case TF_WEAPON_ROCKETLAUNCHER:
+					case TF_WEAPON_ROCKETLAUNCHER_AIRSTRIKE:
+					case TF_WEAPON_ROCKETLAUNCHER_FIREBALL:
+					case TF_WEAPON_DIRECTHIT:
+						// Rocket launcher and sticky launcher only have half the bonus of the other weapons at short range
+						if (flRandomVal > 0.5)
+							flRandomDamage *= 0.5;
+						break;
+					case TF_WEAPON_SCATTERGUN:
+					case TF_WEAPON_SODA_POPPER:
+					case TF_WEAPON_PEP_BRAWLER_BLASTER:
+						// Scattergun gets 50% bonus of other weapons at short range
+						if (flRandomVal > 0.5)
+							flRandomDamage *= 1.5;
+						break;
+					case TF_WEAPON_PIPEBOMBLAUNCHER:
+					case TF_WEAPON_GRENADELAUNCHER:
+					case TF_WEAPON_CANNON:
+						if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
+							flRandomDamage *= 0.2;
+						break;
+					case TF_WEAPON_STICKBOMB:
+						if (tf2v_use_new_caber.GetBool())	// New Caber has standard Demoman explosion damage variance.
 						{
-							case TF_WEAPON_ROCKETLAUNCHER:
-							case TF_WEAPON_ROCKETLAUNCHER_AIRSTRIKE:
-							case TF_WEAPON_ROCKETLAUNCHER_FIREBALL:
-							case TF_WEAPON_DIRECTHIT:
-								// Rocket launcher and sticky launcher only have half the bonus of the other weapons at short range
-								flRandomDamage *= 0.5;
-								break;
-							case TF_WEAPON_SCATTERGUN:
-							case TF_WEAPON_SODA_POPPER :
-							case TF_WEAPON_PEP_BRAWLER_BLASTER :
-								// Scattergun gets 50% bonus of other weapons at short range
-								flRandomDamage *= 1.5;
-								break;
-							case TF_WEAPON_PIPEBOMBLAUNCHER:
-							case TF_WEAPON_GRENADELAUNCHER :
-							case TF_WEAPON_CANNON :
-								if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
-									flRandomDamage *= 0.2;
-								else if (pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER) // Pipes affected by the 50% bonus though!
-									flRandomDamage *= 0.5;
-								break;
-							case TF_WEAPON_STICKBOMB:	
-								if (tf2v_use_new_caber.GetBool()) // Only new caber has an affected bonus
-								{
-									if (tf2v_use_new_demo_explosion_variance.GetInt() == 2)
-										flRandomDamage *= 0.2; // 20% for new Demoman explosives
-									else
-										flRandomDamage *= 0.5; // 50% for old Demoman explosives
-								}
-								break;
-							default:
-								break;
+							if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
+								flRandomDamage *= 0.2;
+						}
+						break;
+					default:
+						break;
+					}
+
+					// Special cases in case we're farther away than the optimal distance.
+					if (flRandomVal < 0.5)
+					{
+						if ((bitsDamage & DMG_MINICRITICAL) && (pWeapon->GetWeaponID() != TF_WEAPON_CROSSBOW))
+						{
+							// If we're farther/below .5 (100% damage) and have minicrits, make up for the distance.
+							flRandomVal = 0.5;
+						}
+						// Ambassador using the new headshot mechanics? Remove the falloff.
+						if ((pWeapon->GetWeaponID() == TF_WEAPON_REVOLVER) && ( (info.GetDamageCustom() == TF_DMG_CUSTOM_HEADSHOT) && tf2v_use_new_ambassador.GetInt() == 2) )
+						{
+							flRandomVal = 0.5;
 						}
 					}
-				}
-				else if ( ( bitsDamage & DMG_MINICRITICAL ) && ( pWeapon && pWeapon->GetWeaponID() != TF_WEAPON_CROSSBOW ) )
-				{
-					// If we're below .5 (100% damage) and have minicrits, bump our distance closer.
-					flRandomVal = 0.5;
+
 				}
 
-				float flOut = SimpleSplineRemapValClamped( flRandomVal, 0, 1, -flRandomDamage, flRandomDamage );
+				float flOut;
+				if (!tf2v_use_linear_damage.GetBool())
+					flOut = SimpleSplineRemapValClamped(flRandomVal, 0, 1, -flRandomDamage, flRandomDamage); // Spline (default)
+				else
+					flOut = RemapValClamped(flRandomVal, 0, 1, -flRandomDamage, flRandomDamage); // Linear (toggle)
+
 				
 				flDamage = info.GetDamage() + flOut;
 
@@ -5960,14 +6019,6 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 					Msg("Val: %.2f, Out: %.2f, Dmg: %.2f\n", flVal, flOut, info.GetDamage() + flOut );
 				}
 				*/
-			}
-			
-			// Ambassador using the new headshot mechanics? Set the damage now if it we had falloff.
-			if ( ( pWeapon && ( pWeapon->GetWeaponID() == TF_WEAPON_REVOLVER ) ) && ( info.GetDamageCustom() == TF_DMG_CUSTOM_HEADSHOT ) && tf2v_use_new_ambassador.GetInt() == 2 )
-			{
-				float flDistance = Max( 1.0f, ( WorldSpaceCenter() - pAttacker->WorldSpaceCenter() ).Length() );
-				if (flDistance > 512)
-					info.SetDamage( flDamage );
 			}
 
 		}

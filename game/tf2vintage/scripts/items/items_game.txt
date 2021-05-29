@@ -2052,7 +2052,7 @@
 			"item_name"	"#TF_Weapon_PDA_Engineer_Destroyer"
 			"item_type_name"	"#TF_Weapon_PDA_Engineer"
 			"item_slot"	"pda2"
-			"anim_slot"	"pda
+			"anim_slot"	"pda"
 			"image_inventory"	"backpack/weapons/w_models/w_pda_engineer"
 			"model_player"	"models/weapons/c_models/c_pda_engineer/c_pda_engineer.mdl"
 			"used_by_classes"
@@ -2080,7 +2080,9 @@
 			"item_slot"	"pda"
 			"anim_slot"			"pda"
 			"image_inventory"	"backpack/weapons/w_models/w_cigarette_case"
-			"model_player"	"models/weapons/w_models/w_cigarette_case.mdl"
+			"model_world"	"models/weapons/w_models/w_cigarette_case.mdl"
+			"model_player"	"models/weapons/v_models/v_pda_spy.mdl"
+			"attach_to_hands" "0"
 			"used_by_classes"
 			{
 				"spy"	"1"

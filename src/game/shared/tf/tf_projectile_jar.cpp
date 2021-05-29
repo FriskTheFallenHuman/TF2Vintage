@@ -142,6 +142,9 @@ void CTFProjectile_Jar::Spawn( void )
 
 	// Pumpkin Bombs
 	AddFlag( FL_GRENADE );
+	
+	// We don't need this, but it's useful for situations where it could get stuck on level geometry (dynamic ramps)
+	SetDetonateTimerLength( 15.0f );
 
 	// Don't collide with anything for a short time so that we never get stuck behind surfaces
 	SetCollisionGroup( TFCOLLISION_GROUP_NONE );
@@ -289,17 +292,13 @@ void CTFProjectile_Jar::VPhysicsCollision( int index, gamevcollisionevent_t *pEv
 		return;
 	}
 
-	// TODO: This needs to be redone properly
-	/*if ( pHitEntity->GetMoveType() == MOVETYPE_NONE )
+	// Blow up if we hit something static in the world.
+	if ( ( pHitEntity->entindex() == 0 ) && ( pHitEntity->GetMoveType() == MOVETYPE_NONE  ) )
 	{
-		// Blow up
+		// Blow up next think.
 		SetThink( &CTFProjectile_Jar::Detonate );
 		SetNextThink( gpGlobals->curtime );
-	}*/
-
-		// Blow up
-		SetThink( &CTFProjectile_Jar::Detonate );
-		SetNextThink( gpGlobals->curtime );
+	}
 
 }
 
