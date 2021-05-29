@@ -1,11 +1,14 @@
-//========= Copyright © 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
-#ifndef _BASEMODFACTORYBASEPANEL_H__
-#define _BASEMODFACTORYBASEPANEL_H__
+#ifndef BASEMODPANEL_H
+#define BASEMODPANEL_H
+#ifdef _WIN32
+#pragma once
+#endif
 
 #include "vgui_controls/Panel.h"
 #include "vgui_controls/Frame.h"
@@ -13,12 +16,17 @@
 #include "tier1/utllinkedlist.h"
 #include "avi/ibik.h"
 #include "ixboxsystem.h"
+#include "igameevents.h"
+
 #include "OptionsDialog.h"
 #include "OptionsSubAudio.h"
 #include "PlayerListDialog.h"
-#include "igameevents.h"
+#include "CreateMultiplayerGameDialog.h"
+#include "AchievementsDialog.h"
 
 class COptionsDialog;
+class CCreateMultiplayerGameDialog;
+class CAchievementsDialog;
 
 // must supply some non-trivial time to let the movie startup smoothly
 // the attract screen also uses this so it doesn't pop in either
@@ -32,20 +40,10 @@ namespace BaseModUI
 	enum WINDOW_TYPE 
 	{
 		WT_NONE = 0,
-		WT_AUDIO,
-		WT_VIDEO,
-		WT_MOUSE,
-		WT_KEYBOARD,
-		WT_ACHIEVEMENTS,
-		WT_SAVEGAME,
 		WT_GENERICCONFIRMATION,
-		WT_INGAMEMAINMENU,
+		WT_MAINMENU,
 		WT_LOADINGPROGRESSBKGND,
 		WT_LOADINGPROGRESS,
-		WT_LOADGAME,
-		WT_NEWGAME,
-		WT_MAINMENU,
-		WT_CREATEGAME,
 		WT_WINDOW_COUNT // WT_WINDOW_COUNT must be last in the list!
 	};
 
@@ -130,6 +128,8 @@ namespace BaseModUI
 		int GetLastActiveUserId();
 
 		void OpenOptionsDialog( Panel *parent );
+		void OpenCreateMultiplayerGameDialog( Panel *parent );
+		void OpenAchievementsDialog( Panel *parent );
 		void OpenPlayerListDialog( Panel *parent );
 		void OpenServerBrowser();
 
@@ -162,8 +162,11 @@ namespace BaseModUI
 		WINDOW_TYPE m_ActiveWindow[WPRI_COUNT];
 		bool m_LevelLoading;
 		vgui::HScheme m_UIScheme;
-		vgui::DHANDLE<COptionsDialog> m_hOptionsDialog;	// standalone options dialog - PC only
 		int m_lastActiveUserId;
+
+		vgui::DHANDLE<COptionsDialog> m_hOptionsDialog;
+		vgui::DHANDLE<CCreateMultiplayerGameDialog> m_hCreateServerDialog;
+		vgui::DHANDLE<CAchievementsDialog> m_hAchievementsDialog;
 
 		vgui::HFont m_hDefaultFont;
 
@@ -197,4 +200,4 @@ namespace BaseModUI
 	};
 };
 
-#endif
+#endif // BASEMODPANEL_H

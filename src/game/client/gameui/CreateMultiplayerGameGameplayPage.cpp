@@ -25,6 +25,8 @@ using namespace vgui;
 #include "scriptobject.h"
 #include <tier0/vcrmode.h>
 
+#include "ModInfo.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
@@ -38,7 +40,7 @@ using namespace vgui;
 class CServerDescription : public CDescription
 {
 public:
-	CServerDescription( void );
+	CServerDescription( CPanelListPanel *panel );
 
 	void WriteScriptHeader( FileHandle_t fp );
 	void WriteFileHeader( FileHandle_t fp ); 
@@ -47,17 +49,16 @@ public:
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CCreateMultiplayerGameGameplayPage::CCreateMultiplayerGameGameplayPage(vgui::Panel *parent, const char *name) : PropertyPage(parent, name)
+CCreateMultiplayerGameGameplayPage::CCreateMultiplayerGameGameplayPage( vgui::Panel *parent, const char *name ) : PropertyPage( parent, name )
 {
-	SetSize( 10, 10 ); // Quiet "parent not sized yet" spew
-	m_pOptionsList = new CPanelListPanel(this, "GameOptions");
+	m_pOptionsList = new CPanelListPanel( this, "GameOptions" );
 
-	m_pDescription = new CServerDescription();
+	m_pDescription = new CServerDescription( m_pOptionsList );
 	m_pDescription->InitFromFile( DEFAULT_OPTIONS_FILE );
 	m_pDescription->InitFromFile( OPTIONS_FILE );
 	m_pList = NULL;
 
-	LoadControlSettings("Resource/CreateMultiplayerGameGameplayPage.res");
+	LoadControlSettings( "Resource/CreateMultiplayerGameGameplayPage.res" );
 
 	LoadGameOptionsList();
 }
@@ -75,7 +76,7 @@ CCreateMultiplayerGameGameplayPage::~CCreateMultiplayerGameGameplayPage()
 //-----------------------------------------------------------------------------
 int CCreateMultiplayerGameGameplayPage::GetMaxPlayers()
 {
-	return atoi(GetValue("maxplayers", "32"));
+	return atoi( GetValue( "maxplayers", "65" ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -83,7 +84,7 @@ int CCreateMultiplayerGameGameplayPage::GetMaxPlayers()
 //-----------------------------------------------------------------------------
 const char *CCreateMultiplayerGameGameplayPage::GetPassword()
 {
-	return GetValue("sv_password", "");
+	return GetValue( "sv_password", "" );
 }
 
 //-----------------------------------------------------------------------------
@@ -91,7 +92,7 @@ const char *CCreateMultiplayerGameGameplayPage::GetPassword()
 //-----------------------------------------------------------------------------
 const char *CCreateMultiplayerGameGameplayPage::GetHostName()
 {
-	return GetValue("hostname", "Half-Life");	
+	return GetValue( "hostname", ModInfo().GetGameName() );
 }
 
 //-----------------------------------------------------------------------------
@@ -108,12 +109,12 @@ const char *CCreateMultiplayerGameGameplayPage::GetValue(const char *cvarName, c
 			static char buf[128];
 			if (control && control->RequestInfo(data))
 			{
-				strncpy(buf, data->GetString("text", defaultValue), sizeof(buf) - 1);
+				Q_strncpy(buf, data->GetString("text", defaultValue), sizeof(buf) - 1);
 			}
 			else
 			{
 				// no value found, copy in default text
-				strncpy(buf, defaultValue, sizeof(buf) - 1);
+				Q_strncpy(buf, defaultValue, sizeof(buf) - 1);
 			}
 
 			// ensure null termination of string
@@ -387,7 +388,7 @@ void CCreateMultiplayerGameGameplayPage::GatherCurrentValues()
 //-----------------------------------------------------------------------------
 // Purpose: Constructor, load/save server settings object
 //-----------------------------------------------------------------------------
-CServerDescription::CServerDescription( void ) : CDescription()
+CServerDescription::CServerDescription( CPanelListPanel *panel ) : CDescription( panel )
 {
 	setHint( "// NOTE:  THIS FILE IS AUTOMATICALLY REGENERATED, \r\n"
 "//DO NOT EDIT THIS HEADER, YOUR COMMENTS WILL BE LOST IF YOU DO\r\n"

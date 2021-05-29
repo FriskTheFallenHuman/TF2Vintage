@@ -1,18 +1,25 @@
-//========= Copyright © 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
-#ifndef __VLOADINGPROGRESS_H__
-#define __VLOADINGPROGRESS_H__
+#ifndef VLOADINGPROGRESS_H
+#define VLOADINGPROGRESS_H
+#ifdef _WIN32
+#pragma once
+#endif
 
 #include "basemodui.h"
 #include "vgui/IScheme.h"
 #include "const.h"
 #include "igameevents.h"
-#include "ExMenuButton.h"
+#ifdef TF_VINTAGE_CLIENT
+#include "tf_controls.h"
 #include "LoadingTipPanel.h"
+#else
+#include "vgui_controls/Button.h"
+#endif
 
 namespace BaseModUI 
 {
@@ -68,7 +75,12 @@ namespace BaseModUI
 		vgui::ImagePanel	*m_pBGImage;
 		vgui::Panel			*m_pFooter;
 		vgui::Label			*m_pLoadingProgress;
+
+#ifdef TF_VINTAGE_CLIENT
 		CExMenuButton		*m_pCancelButton;
+#else
+		vgui::Button		*m_pCancelButton;
+#endif
 
 		LoadingType			m_LoadingType;
 		LoadingWindowType	m_LoadingWindowType;
@@ -88,5 +100,4 @@ namespace BaseModUI
 		CLoadingTipPanel	*m_pTipPanel;
 	};
 };
-
-#endif // __VLOADINGPROGRESS_H__
+#endif // VLOADINGPROGRESS_H

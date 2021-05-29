@@ -1,8 +1,8 @@
-//========= Copyright  1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
 #include "cbase.h"
 #include "vmainmenu.h"
@@ -29,6 +29,7 @@
 #include "fmtstr.h"
 
 #include "FileSystem.h"
+#include "GameUI_Interface.h"
 
 #include "time.h"
 
@@ -53,8 +54,6 @@ MainMenu::MainMenu( Panel *parent, const char *panelName ):	BaseClass( parent, p
 	AddFrameListener( this );
 
 	SetDeleteSelfOnClose( true );
-
-	m_pSteamDetails = new CSteamDetailsPanel( this );
 }
 
 //=============================================================================
@@ -70,10 +69,24 @@ void MainMenu::OnCommand( const char *command )
 		ConColorMsg( Color( 77, 116, 85, 255 ), "[GAMEUI] Handling main menu command %s\n", command );
 
 	bool bOpeningFlyout = false;
+	bool bMpOnly = GameUI().IsInMultiplayer();
 
-	if ( !Q_strcmp( command, "Achievements" ) )
+	if ( bMpOnly && !Q_strcmp( command, "ReturnToGame" ) )
 	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_ACHIEVEMENTS, this, true );
+		engine->ClientCmd( "gameui_hide" );
+	}
+	else if( bMpOnly && !Q_strcmp( command, "MutePlayer" ) )
+	{
+		CBaseModPanel::GetSingleton().OpenPlayerListDialog( this );
+	}
+	else if( bMpOnly && !Q_strcmp( command, "ExitToMainMenu" ) )
+	{
+		MakeGenericDialog( "#GameUI_Disconnect", 
+						   "#GameUI_DisconnectConfirmationText", 
+						   true, 
+						   &LeaveGameOkCallback,
+						   true,
+						   this );
 	}
 	else if ( !Q_strcmp( command, "QuitGame" ) )
 	{
@@ -92,37 +105,17 @@ void MainMenu::OnCommand( const char *command )
 	{
 		CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
 	}
-	else if ( !Q_strcmp( command, "Audio" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_AUDIO, this, true );
-	}
-	else if ( !Q_strcmp( command, "Video" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_VIDEO, this, true );
-	}
-	else if ( !Q_strcmp( command, "Keyboard" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_KEYBOARD, this, true );
-	}
-	else if ( !Q_strcmp( command, "Mouse" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_MOUSE, this, true );
-	}
 	else if ( !Q_strcmp( command, "ServerBrowser" ) )
 	{
 		CBaseModPanel::GetSingleton().OpenServerBrowser();
 	}
 	else if( !Q_strcmp( command, "CreateGame" ) )
 	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_CREATEGAME, this, true );
+		CBaseModPanel::GetSingleton().OpenCreateMultiplayerGameDialog( this );
 	}
-	else if ( !Q_strcmp( command, "NewGame" ) )
+	else if ( !Q_strcmp( command, "Achievements" ) )
 	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_NEWGAME, this, true );
-	}
-	else if( !Q_strcmp( command, "LoadGame" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_LOADGAME, this, true );
+		CBaseModPanel::GetSingleton().OpenAchievementsDialog( this );
 	}
 	else if ( !Q_stricmp( command, "ReleaseModalWindow" ) )
 	{
@@ -184,10 +177,17 @@ void MainMenu::OnKeyCodePressed( KeyCode code )
 	int userId = GetJoystickForCode( code );
 	BaseModUI::CBaseModPanel::GetSingleton().SetLastActiveUserId( userId );
 
+	bool bMpOnly = GameUI().IsInMultiplayer();
+
 	switch( GetBaseButtonCode( code ) )
 	{
+	case KEY_XBUTTON_START:
 	case KEY_XBUTTON_B:
-		// Capture the B key so it doesn't play the cancel sound effect
+		if ( bMpOnly )
+		{
+			CBaseModPanel::GetSingleton().PlayUISound( UISOUND_BACK );
+			OnCommand( "ReturnToGame" );	
+		}
 		break;
 
 	default:
@@ -207,15 +207,20 @@ void MainMenu::OnThink()
 {
 	BaseClass::OnThink();
 
-	ConVarRef pDXLevel( "mat_dxlevel" );
-	if( pDXLevel.GetInt() < 90 )
+	bool bMpOnly = GameUI().IsInMultiplayer();
+	if ( IsVisible() && bMpOnly )
 	{
-		MakeGenericDialog( "#GameUI_Unsupported_DXLevel", 
-						   "#GameUI_Unsupported_DXLevel_Msg", 
-						   true, 
-						   nullptr, 
-						   false,
-						   this );
+		// Yield to generic message box if is present
+		WINDOW_TYPE arrYield[] = { WT_GENERICCONFIRMATION };
+		for ( int j = 0; j < ARRAYSIZE( arrYield ); ++ j )
+		{
+			CBaseModFrame *pYield = CBaseModPanel::GetSingleton().GetWindow( arrYield[j] );
+			if ( pYield && pYield->IsVisible() && !pYield->HasFocus() )
+			{
+				pYield->Activate();
+				pYield->RequestFocus();
+			}
+		}
 	}
 }
 
@@ -223,6 +228,34 @@ void MainMenu::OnThink()
 void MainMenu::OnOpen()
 {
 	BaseClass::OnOpen();
+}
+
+//=============================================================================
+void MainMenu::OnClose()
+{
+	bool bMpOnly = GameUI().IsInMultiplayer();
+	if ( bMpOnly )
+		Unpause();
+
+	// During shutdown this calls delete this, so Unpause should occur before this call
+	BaseClass::OnClose();
+}
+
+//=============================================================================
+void MainMenu::PerformLayout( void )
+{
+	BaseClass::PerformLayout();
+}
+
+//=============================================================================
+void MainMenu::OnGameUIHidden()
+{
+	bool bMpOnly = GameUI().IsInMultiplayer();
+	if ( bMpOnly )
+	{
+		Unpause();
+		Close();
+	}
 }
 
 //=============================================================================
@@ -264,42 +297,23 @@ void MainMenu::AcceptQuitGameCallback()
 		pMainMenu->OnCommand( "QuitGame_NoConfirm" );
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-CSteamDetailsPanel::CSteamDetailsPanel( Panel *pParent ) : EditablePanel( pParent, "SteamDetailsPanel" )
-{
-	if ( steamapicontext->SteamUser() )
-		m_SteamID = steamapicontext->SteamUser()->GetSteamID();
-
-	m_pProfileAvatar = NULL;
-
-	vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
-}
-
 //=============================================================================
-void CSteamDetailsPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
+void MainMenu::LeaveGameOkCallback()
 {
-	BaseClass::ApplySchemeSettings( pScheme );
+	COM_TimestampedLog( "Exit Game" );
 
-	LoadControlSettings( "Resource/UI/SteamDetailsPanel.res" );
+	if ( MainMenu *self = static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) ) )
+		self->Close();
 
-	m_pProfileAvatar = dynamic_cast<CAvatarImagePanel *>( FindChildByName( "AvatarImage" ) );
+	engine->ExecuteClientCmd( "gameui_hide" );
+
+	// On PC people can be playing via console bypassing matchmaking
+	// and required session settings, so to leave game duplicate
+	// session closure with an extra "disconnect" command.
+	engine->ExecuteClientCmd( "disconnect" );
+
+	engine->ExecuteClientCmd( "gameui_activate" );
+
+	CBaseModPanel::GetSingleton().CloseAllWindows();
+	CBaseModPanel::GetSingleton().OpenFrontScreen();
 }
-
-//=============================================================================
-void CSteamDetailsPanel::PerformLayout()
-{
-	BaseClass::PerformLayout();
-
-	if ( m_pProfileAvatar )
-	{
-		m_pProfileAvatar->SetPlayer( m_SteamID, k_EAvatarSize64x64 );
-		m_pProfileAvatar->SetShouldDrawFriendIcon( false );
-	}
-
-	char szSteamUser[64];
-	Q_snprintf( szSteamUser, sizeof( szSteamUser ),
-		( steamapicontext->SteamFriends() ? steamapicontext->SteamFriends()->GetPersonaName() : "Unknown" ) );
-	SetDialogVariable( "steamusername", szSteamUser );
-};

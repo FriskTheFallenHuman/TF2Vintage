@@ -1,14 +1,18 @@
-//========= Copyright © 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
 #include "cbase.h"
 #include "VGenericConfirmation.h"
 #include "vgui_controls/Label.h"
 #include "vgui/ISurface.h"
-#include "ExMenuButton.h"
+#ifdef TF_VINTAGE_CLIENT
+#include "tf_controls.h"
+#else
+#include "vgui_controls/Button.h"
+#endif
 #include "cdll_util.h"
 #include <vgui_controls/AnimationController.h>
 
@@ -45,22 +49,28 @@ GenericConfirmation::GenericConfirmation( Panel *parent, const char *panelName )
 {
 	SetProportional( true );
 
-	m_pPnlLowerGarnish = new vgui::Panel( this, "PnlLowerGarnish" );
-
+#ifdef TF_VINTAGE_CLIENT
 	m_pBtnOK = new CExMenuButton( this, "BtnOK", "", this, "OK" );
 	m_pBtnCancel = new CExMenuButton( this, "BtnCancel", "", this, "cancel" );
+#else
+	m_pBtnOK = new vgui::Button( this, "BtnOK", "", this, "OK" );
+	m_pBtnCancel = new vgui::Button( this, "BtnCancel", "", this, "cancel" );
+#endif
 
 	SetTitle( "", false );
 	SetDeleteSelfOnClose( true );
 	SetLowerGarnishEnabled( false );
 	SetMoveable( false );
+#ifdef TF_VINTAGE_CLIENT
+	SetPaintBackgroundEnabled( false );
+	SetPaintBackgroundType( 0 );
+#endif
 }
 
 //=============================================================================
 GenericConfirmation::~GenericConfirmation()
 {
 	delete m_pLblMessage;
-	delete m_pPnlLowerGarnish;
 }
 
 //=============================================================================
@@ -155,7 +165,11 @@ void GenericConfirmation::OnOpen( )
 	m_bNeedsMoveToFront = true;
 }
 
+#ifdef TF_VINTAGE_CLIENT
 void ExpandButtonWidthIfNecessary( CExMenuButton *pButton )
+#else
+void ExpandButtonWidthIfNecessary( CExMenuButton *pButton )
+#endif
 {
 	int originalWide, originalTall;
 	pButton->GetSize( originalWide, originalTall );
@@ -243,12 +257,23 @@ void GenericConfirmation::LoadLayout()
 	int buttonTall = 0;
 
 	// On the PC, the buttons will be the same size, use the OK button
+#ifdef TF_VINTAGE_CLIENT
 	CExMenuButton *pOkButton = NULL;
 	CExMenuButton *pCancelButton = NULL;
+#else
+	vgui::Button *pOkButton = NULL;
+	vgui::Button *pCancelButton = NULL;
+#endif
+
 	if ( IsPC() )
 	{
+#ifdef TF_VINTAGE_CLIENT
 		pOkButton = dynamic_cast< CExMenuButton* >( FindChildByName( "BtnOk" ) );
 		pCancelButton = dynamic_cast< CExMenuButton* >( FindChildByName( "BtnCancel" ) );
+#else
+		pOkButton = dynamic_cast< vgui::Button* >( FindChildByName( "BtnOk" ) );
+		pCancelButton = dynamic_cast< vgui::Button* >( FindChildByName( "BtnCancel" ) );
+#endif
 		pOkButton->GetSize( buttonWide, buttonTall );
 	}
 
@@ -324,7 +349,11 @@ void GenericConfirmation::LoadLayout()
 		if ( m_data.bCancelButtonEnabled || m_data.bOkButtonEnabled )
 		{
 			// when only one button is enabled, center that button
+#ifdef TF_VINTAGE_CLIENT
 			CExMenuButton *pButton = NULL;
+#else
+			vgui::Button *pButton = NULL;
+#endif
 			bool bSingleButton = false;
 			if ( ( m_data.bCancelButtonEnabled && !m_data.bOkButtonEnabled ) )
 			{
@@ -359,7 +388,11 @@ void GenericConfirmation::LoadLayout()
 //=============================================================================
 void GenericConfirmation::PaintBackground()
 {
-	BaseClass::DrawGenericBackground();
+#ifdef TF_VINTAGE_CLIENT
+	BaseClass::PaintBackground();
+#else
+	BaseClass::DrawGenericDialog();
+#endif
 
 	if ( m_bNeedsMoveToFront )
 	{
@@ -425,15 +458,19 @@ int GenericConfirmation::SetUsageData( const Data_t & data )
 //=============================================================================
 void GenericConfirmation::ApplySchemeSettings(IScheme *pScheme)
 {
-	BaseClass::ApplySchemeSettings(pScheme);
+	BaseClass::ApplySchemeSettings( pScheme );
 
 	LoadLayout();
+
+#ifdef TF_VINTAGE_CLIENT
+	SetBorder( pScheme->GetBorder( "EconItemBorder" ) );
+#endif
 
 	//
 	// Override title and msg font
 	//
-	m_hTitleFont = pScheme->GetFont( "MainBold", true );
-	m_hMessageFont = pScheme->GetFont( "Default", true );
+	m_hTitleFont = pScheme->GetFont( "HudFontMediumBold", true );
+	m_hMessageFont = pScheme->GetFont( "HudFontSmallBold", true );
 
 	if ( m_LblTitle )
 	{

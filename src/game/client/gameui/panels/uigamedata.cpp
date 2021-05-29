@@ -1,3 +1,8 @@
+//========= Copyright Valve Corporation, All rights reserved. ============//
+//
+// Purpose:
+//
+//===========================================================================//
 #include "cbase.h"
 #include "uigamedata.h"
 #include "vgenericconfirmation.h"

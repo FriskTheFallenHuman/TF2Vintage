@@ -1,11 +1,13 @@
-//========= Copyright © 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
-
-#ifndef __UIGAMEDATA_H__
-#define __UIGAMEDATA_H__
+//===========================================================================//
+#ifndef UIGAMEDATA_H
+#define UIGAMEDATA_H
+#ifdef _WIN32
+#pragma once
+#endif
 
 #include "vgui_controls/Panel.h"
 #include "vgui_controls/Frame.h"
@@ -61,4 +63,4 @@ namespace BaseModUI
 	};
 }
 
-#endif // __UIGAMEDATA_H__
+#endif // UIGAMEDATA_H

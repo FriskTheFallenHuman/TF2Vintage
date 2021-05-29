@@ -1,5 +1,13 @@
+//========= Copyright Valve Corporation, All rights reserved. ============//
+//
+// Purpose:
+//
+//===========================================================================//
 #ifndef VSLIDERCONTROL_H
 #define VSLIDERCONTORL_H
+#ifdef _WIN32
+#pragma once
+#endif
 
 #include "basemodui.h"
 #include "vgui/mousecode.h"
@@ -91,4 +99,4 @@ namespace BaseModUI
 	};
 };
 
-#endif
+#endif // VSLIDERCONTORL_H

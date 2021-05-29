@@ -24,6 +24,7 @@ $Project
 			$Folder	"Base GameUI"
 			{
 				$File	"vgui_video_player.cpp"
+				$File	"gameui\LoadingTipPanel.cpp"
 
 				$File	"gameui\AchievementsDialog.cpp" \
 						"gameui\BitmapImagePanel.cpp" \
@@ -41,7 +42,6 @@ $Project
 						"gameui\GameUI_Interface.cpp" \
 						"gameui\KeyToggleCheckButton.cpp" \
 						"gameui\LabeledCommandComboBox.cpp" \
-						"gameui\LoadingTipPanel.cpp" \
 						"gameui\ModInfo.cpp" \
 						"gameui\MouseMessageForwardingPanel.cpp" \
 						"gameui\MultiplayerAdvancedDialog.cpp" \

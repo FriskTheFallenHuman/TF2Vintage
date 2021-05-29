@@ -1,11 +1,14 @@
-//========= Copyright © 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
-#ifndef __BASEMOD360UI_H__
-#define __BASEMOD360UI_H__
+#ifndef BASEMODUI_H
+#define BASEMODUI_H
+#ifdef _WIN32
+#pragma once
+#endif
 
 #include "basemodpanel.h"
 #include "basemodframe.h"
@@ -19,4 +22,4 @@
 #	define UI_IsDebug()		0
 #endif
 
-#endif
+#endif // BASEMODUI_H

@@ -1,5 +1,10 @@
-#ifndef _INCLUDED_NB_HEADER_FOOTER_H
-#define _INCLUDED_NB_HEADER_FOOTER_H
+//========= Copyright Valve Corporation, All rights reserved. ============//
+//
+// Purpose:
+//
+//===========================================================================//
+#ifndef NB_HEADER_FOOTER_H
+#define NB_HEADER_FOOTER_H
 #ifdef _WIN32
 #pragma once
 #endif
@@ -116,4 +121,4 @@ public:
 	virtual void PaintBackground();
 };
 
-#endif // _INCLUDED_NB_HEADER_FOOTER_H
+#endif // NB_HEADER_FOOTER_H

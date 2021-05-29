@@ -34,30 +34,18 @@ protected:
 	virtual void OnApplyChanges();
 
 private:
-	CCvarToggleCheckButton *m_joinAfterPlayer;
+	CCvarToggleCheckButton *m_TFBotjoinAfterPlayer;
+	CCvarToggleCheckButton *m_TFBotAutoVacate;
+	CCvarToggleCheckButton *m_TFBotOfflinePratice;
+	CCvarToggleCheckButton *m_TFBotMeleeOnly;
+	CCvarToggleCheckButton *m_TFBotKeepClass;
+	CCvarToggleCheckButton *m_TFBotPrefixDifficulty;
+	CCvarToggleCheckButton *m_TFBotUseItems;
+	CCvarToggleCheckButton *m_TFBotEconRandom;
+	CCvarToggleCheckButton *m_TFBotKeepEcon;
 
-	CCvarToggleCheckButton *m_allowRogues;
-
-	CCvarToggleCheckButton *m_allowPistols;
-	CCvarToggleCheckButton *m_allowShotguns;
-	CCvarToggleCheckButton *m_allowSubmachineGuns;
-	CCvarToggleCheckButton *m_allowMachineGuns;
-	CCvarToggleCheckButton *m_allowRifles;
-	CCvarToggleCheckButton *m_allowGrenades;
-#ifdef CS_SHIELD_ENABLED
-	CCvarToggleCheckButton *m_allowShields;
-#endif // CS_SHIELD_ENABLED
-	CCvarToggleCheckButton *m_allowSnipers;
-
-	CCvarToggleCheckButton *m_deferToHuman;
-
-	vgui::ComboBox *m_joinTeamCombo;
-	void SetJoinTeamCombo( const char *team );
-
-	vgui::ComboBox *m_chatterCombo;
-	void SetChatterCombo( const char *team );
-
-	vgui::TextEntry *m_prefixEntry;
+	vgui::TextEntry *m_TFBotQuotaMode;
+	vgui::TextEntry *m_TFBotClass;
 
 	KeyValues *m_pSavedData;
 };

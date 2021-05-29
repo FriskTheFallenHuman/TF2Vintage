@@ -1,3 +1,8 @@
+//========= Copyright Valve Corporation, All rights reserved. ============//
+//
+// Purpose:
+//
+//===========================================================================//
 #include "cbase.h"
 #include "vgui_controls/ImagePanel.h"
 #include "VFlyoutMenu.h"

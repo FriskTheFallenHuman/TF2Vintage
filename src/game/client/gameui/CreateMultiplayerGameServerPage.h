@@ -22,19 +22,17 @@ class CCreateMultiplayerGameServerPage : public vgui::PropertyPage
 	DECLARE_CLASS_SIMPLE( CCreateMultiplayerGameServerPage, vgui::PropertyPage );
 
 public:
-	CCreateMultiplayerGameServerPage(vgui::Panel *parent, const char *name);
+	CCreateMultiplayerGameServerPage( vgui::Panel *parent, const char *name );
 	~CCreateMultiplayerGameServerPage();
 
-	virtual void OnKeyCodePressed( vgui::KeyCode code );
-
 	// returns currently entered information about the server
-	void SetMap(const char *name);
+	void SetMap( const char *name );
 	bool IsRandomMapSelected();
 	const char *GetMapName();
 
 	vgui::ComboBox *GetMapList( void ) { return m_pMapList; }
 
-	// CS Bots
+	// TF Bots
 	void EnableBots( KeyValues *data );
 	int GetBotQuota( void );
 	bool GetBotsEnabled( void );

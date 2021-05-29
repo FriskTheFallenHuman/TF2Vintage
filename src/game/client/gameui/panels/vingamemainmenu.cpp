@@ -1,8 +1,8 @@
-//========= Copyright  1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
 #include "cbase.h"
 #include "VInGameMainMenu.h"
@@ -66,45 +66,15 @@ void InGameMainMenu::OnCommand( const char *command )
 	{
 		CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
 	}
-	else if ( !Q_strcmp( command, "Audio" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_AUDIO, this, true );
-	}
-	else if ( !Q_strcmp( command, "Video" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_VIDEO, this, true );
-	}
-	else if ( !Q_strcmp( command, "Keyboard" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_KEYBOARD, this, true );
-	}
-	else if ( !Q_strcmp( command, "Mouse" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_MOUSE, this, true );
-	}
 	else if ( !Q_strcmp( command, "ServerBrowser" ) )
 	{
 		CBaseModPanel::GetSingleton().OpenServerBrowser();
 	}
 	else if( !Q_strcmp( command, "CreateGame" ) )
 	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_CREATEGAME, this, true );
-	}
-	else if ( !Q_strcmp( command, "NewGame" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_NEWGAME, this, true );
-	}
-	else if( !Q_strcmp( command, "LoadGame" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_LOADGAME, this, true );
-	}
-	else if( !Q_strcmp( command, "SaveGame" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_SAVEGAME, this, true );
 	}
 	else if ( !Q_strcmp( command, "Achievements" ) )
 	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_ACHIEVEMENTS, this, true );
 	}
 	else if( !Q_strcmp( command, "ExitToMainMenu" ) )
 	{
@@ -267,27 +237,9 @@ void InGameMainMenu::PaintBackground()
 //=============================================================================
 void InGameMainMenu::LeaveGameOkCallback()
 {
-	COM_TimestampedLog( "Exit Game" );
-
-	if ( InGameMainMenu *self = static_cast< InGameMainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_INGAMEMAINMENU ) ) )
-		self->Close();
-
-	engine->ExecuteClientCmd( "gameui_hide" );
-
-	// On PC people can be playing via console bypassing matchmaking
-	// and required session settings, so to leave game duplicate
-	// session closure with an extra "disconnect" command.
-	engine->ExecuteClientCmd( "disconnect" );
-
-	engine->ExecuteClientCmd( "gameui_activate" );
-
-	CBaseModPanel::GetSingleton().CloseAllWindows();
-	CBaseModPanel::GetSingleton().OpenFrontScreen();
 }
 
 //=============================================================================
 void InGameMainMenu::AcceptQuitGameCallback()
 {
-	if ( InGameMainMenu *pMainMenu = static_cast< InGameMainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_INGAMEMAINMENU ) ) )
-		pMainMenu->OnCommand( "QuitGame_NoConfirm" );
 }

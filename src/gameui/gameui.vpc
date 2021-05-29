@@ -6,7 +6,7 @@
 $Macro SRCDIR		".."
 
 $Macro OUTBINNAME	"gameui"
-$Macro OUTBINDIR	"$SRCDIR\..\game\vectronic\bin"
+$Macro OUTBINDIR	"$SRCDIR\..\game\tf2vintage\bin"
 
 
 $Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"

@@ -1,14 +1,15 @@
-//===== Copyright © 1996-2008, Valve Corporation, All rights reserved. ======//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose: Tip display during level loads.
 //
 //===========================================================================//
 
+#include "cbase.h"
 #include "LoadingTipPanel.h"
 #include "vgui/isurface.h"
 #include "EngineInterface.h"
-#ifdef VECTRONIC_DLL
-#include "tip_manager.h"
+#ifdef TF_VINTAGE_CLIENT
+#include "tf_tips.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -50,8 +51,9 @@ void CLoadingTipPanel::NextTip( void )
 	if ( !IsEnabled() )
 		return;
 
-#ifdef VECTRONIC_DLL
-	SetDialogVariable( "TipText", g_TipManager.GetRandomTip() );
+#ifdef TF_VINTAGE_CLIENT
+	int iClass = TF_CLASS_UNDEFINED;
+	SetDialogVariable( "TipText", g_TFTips.GetRandomTip( iClass ) );
 #endif
 
 	// Set our control visible

@@ -1,3 +1,8 @@
+//========= Copyright Valve Corporation, All rights reserved. ============//
+//
+// Purpose:
+//
+//===========================================================================//
 #include "cbase.h"
 #include "nb_header_footer.h"
 #include "vgui_controls/Label.h"

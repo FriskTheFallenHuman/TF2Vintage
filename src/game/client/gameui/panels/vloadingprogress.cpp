@@ -1,8 +1,8 @@
-//========= Copyright � 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
 #include "cbase.h"
 #include "VLoadingProgress.h"
@@ -17,7 +17,6 @@
 #include "fmtstr.h"
 #include "FileSystem.h"
 #include "GameUI_Interface.h"
-#include "GameUI_Utils.h"
 #include <vgui/IInput.h>
 #include "FileSystem.h"
 #include "time.h"
@@ -291,7 +290,11 @@ void LoadingProgress::SetupControlStates()
 	}
 
 	m_pLoadingProgress = dynamic_cast< vgui::Label* >( FindChildByName( "LoadingProgressText" ) );
+#ifdef TF_VINTAGE_CLIENT
 	m_pCancelButton = dynamic_cast< CExMenuButton* >( FindChildByName( "Cancel" ) );
+#else
+	m_pCancelButton = dynamic_cast< vgui::Button* >( FindChildByName( "Cancel" ) );
+#endif
 	m_pFooter = dynamic_cast< vgui::Panel* >( FindChildByName( "Footer" ) );
 
 	m_pBGImage = dynamic_cast< vgui::ImagePanel* >( FindChildByName( "Background" ) );

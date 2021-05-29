@@ -1,8 +1,8 @@
-//========= Copyright © 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
 #include "cbase.h"
 #include <ctype.h>
@@ -278,8 +278,6 @@ void CBaseModFrame::OnMousePressed( vgui::MouseCode code )
 void CBaseModFrame::OnOpen()
 {	
 	SetAlpha(255);//make sure we show up.
-	//SetAlpha(0);
-	vgui::GetAnimationController()->RunAnimationCommand( this, "Alpha", 255, 0.05f, 0.2f, vgui::AnimationController::INTERPOLATOR_SIMPLESPLINE );
 	Activate();
 
 	// close active menu if there is one
@@ -294,9 +292,6 @@ void CBaseModFrame::OnOpen()
 //======================================================================\=======
 void CBaseModFrame::OnClose()
 {
-	//SetAlpha(255);
-	vgui::GetAnimationController()->RunAnimationCommand( this, "Alpha", 0, 0.05f, 0.2f, vgui::AnimationController::INTERPOLATOR_SIMPLESPLINE );
-
 	FindAndSetActiveControl();
 
 	if ( ui_gameui_modal.GetBool() )

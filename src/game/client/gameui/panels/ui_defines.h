@@ -1,10 +1,13 @@
-//======== Copyright © 2013-2015, Stan Riders aka Strider[RUS], All rights reserved. ===========//
+//========= Copyright © 2013-2015, Stan Riders, All rights reserved. ============//
 //
-// Purpose: HL2Port UI-related defines.
+// Purpose:	UI-related defines.
 //
-//==============================================================================================//
-#ifndef __UIDEFINES_H__
-#define __UIDEFINES_H__
+//===========================================================================//
+#ifndef UI_DEFINES_H
+#define UI_DEFINES_H
+#ifdef _WIN32
+#pragma once
+#endif
 
 // --- UI colors (random shades of gray for now)
 #define UI_STYLE_ENABLED5			169, 169, 169, 255	// style5
@@ -29,4 +32,4 @@
 #define UI_STYLE_FOOTER_GRADIENT	35, 35, 35, 255		// 19, 35, 65, 255
 #define UI_STYLE_FOOTER_GRALINE		61, 61, 61, 255		// 35, 61, 87, 255
 
-#endif
+#endif // UI_DEFINES_H

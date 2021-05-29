@@ -1,11 +1,14 @@
-//========= Copyright © 1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
-#ifndef __BASEMODFRAME_H__
-#define __BASEMODFRAME_H__
+#ifndef BASEMODFRAME_H
+#define BASEMODFRAME_H
+#ifdef _WIN32
+#pragma once
+#endif
 
 #include "cbase.h"
 #include "vgui_controls/Panel.h"
@@ -14,8 +17,8 @@
 
 #include "basemodpanel.h"
 
-namespace BaseModUI {
-
+namespace BaseModUI 
+{
 	struct DialogMetrics_t
 	{
 		int titleY;
@@ -173,4 +176,4 @@ namespace BaseModUI {
 	};
 };
 
-#endif
+#endif // BASEMODFRAME_H

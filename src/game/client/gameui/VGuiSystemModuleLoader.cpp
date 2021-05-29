@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
@@ -20,7 +20,7 @@
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/Panel.h>
 
-#include "FileSystem.h"
+#include "filesystem.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -89,7 +89,7 @@ bool CVGuiSystemModuleLoader::InitializeAllModules(CreateInterfaceFn *factorylis
 		if (!m_Modules[i].moduleInterface->Initialize(factorylist, factorycount))
 		{
 			bSuccess = false;
-			Warning("Platform Error: module failed to initialize\n");
+			Error("Platform Error: module failed to initialize\n");
 		}
 	}
 
@@ -106,7 +106,7 @@ bool CVGuiSystemModuleLoader::InitializeAllModules(CreateInterfaceFn *factorylis
 		if (!m_Modules[i].moduleInterface->PostInitialize(moduleFactories, m_Modules.Count()))
 		{
 			bSuccess = false;
-			Warning("Platform Error: module failed to initialize\n");
+			Error("Platform Error: module failed to initialize\n");
 		}
 		
 #ifdef GAMEUI_EXPORTS
@@ -156,13 +156,27 @@ bool CVGuiSystemModuleLoader::LoadPlatformModules(CreateInterfaceFn *factorylist
 			continue;
 
 		// get copy out of steam cache
-		const char *dllPath = it->GetString("dll");
+		// Apparently other platafforms exist too lol
+		const char *dllPath = NULL;
+		if ( IsOSX() )
+		{
+			dllPath = it->GetString("dll_osx");
+		}
+		else if ( IsLinux() )
+		{
+			dllPath = it->GetString("dll_linux");
+		}
+		else 
+		{
+			dllPath = it->GetString("dll");
+		}
+
 
 		// load the module (LoadModule calls GetLocalCopy() under steam)
 		CSysModule *mod = g_pFullFileSystem->LoadModule(dllPath, "EXECUTABLE_PATH");
 		if (!mod)
 		{
-			Warning("Platform Error: bad module '%s', not loading\n", it->GetString("dll"));
+			Error("Platform Error: bad module '%s', not loading\n", it->GetString("dll"));
 			bSuccess = false;
 			continue;
 		}
@@ -301,7 +315,7 @@ bool CVGuiSystemModuleLoader::IsModuleVisible(int moduleIndex)
 //-----------------------------------------------------------------------------
 bool CVGuiSystemModuleLoader::IsModuleHidden(int moduleIndex)
 {
-	return m_Modules[moduleIndex].data->GetBool("Hidden", false);
+	return m_Modules[moduleIndex].data->GetInt("Hidden", 0);
 }
 
 //-----------------------------------------------------------------------------

@@ -25,23 +25,19 @@ class CCreateMultiplayerGameDialog : public vgui::PropertyDialog
 	DECLARE_CLASS_SIMPLE( CCreateMultiplayerGameDialog,  vgui::PropertyDialog );
 
 public:
-	CCreateMultiplayerGameDialog(vgui::Panel *parent);
+	CCreateMultiplayerGameDialog( vgui::Panel *parent );
 	~CCreateMultiplayerGameDialog();
 
 protected:
-	virtual bool OnOK(bool applyOnly);
-	virtual void OnKeyCodePressed( vgui::KeyCode code );
+	virtual bool OnOK( bool applyOnly );
 
 private:
 	CCreateMultiplayerGameServerPage *m_pServerPage;
 	CCreateMultiplayerGameGameplayPage *m_pGameplayPage;
 	CCreateMultiplayerGameBotPage *m_pBotPage;
 
-	bool m_bBotsEnabled;
-
 	// for loading/saving game config
 	KeyValues *m_pSavedData;
 };
-
 
 #endif // CREATEMULTIPLAYERGAMEDIALOG_H

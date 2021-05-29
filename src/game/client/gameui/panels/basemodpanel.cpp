@@ -1,8 +1,8 @@
-//========= Copyright  1996-2008, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
-//=====================================================================================//
+//===========================================================================//
 
 #include "cbase.h"
 #include "basemodpanel.h"
@@ -33,19 +33,10 @@
 #include "VGuiSystemModuleLoader.h"
 
 // BaseModUI High-level windows
-#include "vachievements.h"
 #include "vgenericconfirmation.h"
 #include "vingamemainmenu.h"
 #include "vloadingprogress.h"
 #include "vmainmenu.h"
-#include "vcreategame.h"
-#include "vaudio.h"
-#include "vvideo.h"
-#include "vkeyboard.h"
-#include "vmouse.h"
-#include "vloadgame.h"
-#include "vsavegame.h"
-#include "vnewgame.h"
 #include "nb_header_footer.h"
 
 // UI defines. Include if you want to implement some of them [str]
@@ -94,7 +85,7 @@ CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
 	Assert(m_CFactoryBasePanel == 0);
 	m_CFactoryBasePanel = this;
 
-	g_pVGuiLocalize->AddFile( "Resource/basemodui_%language%.txt");
+	g_pVGuiLocalize->AddFile( "Resource/basemodui_%language%.txt" );
 
 	m_LevelLoading = false;
 	
@@ -111,7 +102,7 @@ CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
 	SetScheme( m_UIScheme );
 
 	// Only one user on the PC, so set it now
-	SetLastActiveUserId( IsPC() ? 0 : -1 );
+	SetLastActiveUserId( 0 );
 
 	m_hOptionsDialog = NULL;
 
@@ -197,16 +188,8 @@ CBaseModFrame* CBaseModPanel::OpenWindow(const WINDOW_TYPE & wt, CBaseModFrame *
 	{
 		switch ( wt )
 		{
-		case WT_ACHIEVEMENTS:
-			m_Frames[wt] = new Achievements( this, "Achievements" );
-			break;
-
 		case WT_GENERICCONFIRMATION:
 			m_Frames[wt] = new GenericConfirmation( this, "GenericConfirmation" );
-			break;
-
-		case WT_INGAMEMAINMENU:
-			m_Frames[wt] = new InGameMainMenu( this, "InGameMainMenu" );
 			break;
 
 		case WT_LOADINGPROGRESSBKGND:
@@ -219,38 +202,6 @@ CBaseModFrame* CBaseModPanel::OpenWindow(const WINDOW_TYPE & wt, CBaseModFrame *
 
 		case WT_MAINMENU:
 			m_Frames[wt] = new MainMenu( this, "MainMenu" );
-			break;
-
-		case WT_CREATEGAME:
-			m_Frames[wt] = new CreateGame( this, "CreateGame" );
-			break;
-
-		case WT_SAVEGAME:
-			m_Frames[wt] = new SaveGame( this, "SaveGame" );
-			break;
-
-		case WT_LOADGAME:
-			m_Frames[wt] = new LoadGame( this, "LoadGame" );
-			break;
-
-		case WT_NEWGAME:
-			m_Frames[wt] = new NewGame( this, "NewGame" );
-			break;
-
-		case WT_AUDIO:
-			m_Frames[wt] = new Audio( this, "Audio" );
-			break;
-
-		case WT_VIDEO:
-			m_Frames[wt] = new Video( this, "Video" );
-			break;
-
-		case WT_KEYBOARD:
-			m_Frames[wt] = new Keyboard( this, "Keyboard" );
-			break;
-
-		case WT_MOUSE:
-			m_Frames[wt] = new Mouse( this, "Mouse" );
 			break;
 
 		default:
@@ -603,10 +554,9 @@ void CBaseModPanel::OnGameUIActivated()
 		default:
 			break;
 		case WT_NONE:
-		case WT_INGAMEMAINMENU:
+		case WT_MAINMENU:
 		case WT_GENERICCONFIRMATION:
-			// bForceReturnToFrontScreen = !g_pMatchFramework->GetMatchmaking()->ShouldPreventOpenFrontScreen();
-			bForceReturnToFrontScreen = true; // this used to be some magic about mid-disconnecting-states on PC...
+			bForceReturnToFrontScreen = true;
 			break;
 		}
 		if ( !IsPC() || bForceReturnToFrontScreen )
@@ -616,13 +566,13 @@ void CBaseModPanel::OnGameUIActivated()
 	}
 	else if ( engine->IsConnected() && !m_LevelLoading )
 	{
-		CBaseModFrame *pInGameMainMenu = m_Frames[ WT_INGAMEMAINMENU ].Get();
+		CBaseModFrame *pInGameMainMenu = m_Frames[ WT_MAINMENU ].Get();
 
 		if ( !pInGameMainMenu || !pInGameMainMenu->IsAutoDeleteSet() )
 		{
 			// Prevent in game menu from opening if it already exists!
 			// It might be hiding behind a modal window that needs to keep focus
-			OpenWindow( WT_INGAMEMAINMENU, 0 );
+			OpenWindow( WT_MAINMENU, 0 );
 
 			LoadingProgress *pLoadingProgress = static_cast<LoadingProgress*>( GetWindow( WT_LOADINGPROGRESS ) );
 			if ( pLoadingProgress )
@@ -648,17 +598,17 @@ void CBaseModPanel::OnGameUIHidden()
 	}
 
 	// Notify the in game menu that game UI is closing
-	CBaseModFrame *pInGameMainMenu = GetWindow( WT_INGAMEMAINMENU );
+	CBaseModFrame *pInGameMainMenu = GetWindow( WT_MAINMENU );
 	if ( pInGameMainMenu )
 	{
 		PostMessage( pInGameMainMenu, new KeyValues( "GameUIHidden" ) );
 	}
 
 	// Close achievements
-	if ( CBaseModFrame *pFrame = GetWindow( WT_ACHIEVEMENTS ) )
+	/*if ( CBaseModFrame *pFrame = GetWindow( WT_ACHIEVEMENTS ) )
 	{
 		pFrame->Close();
-	}
+	}*/
 }
 
 void CBaseModPanel::OpenFrontScreen()
@@ -933,6 +883,38 @@ void CBaseModPanel::OpenOptionsDialog( Panel *parent )
 	y -= options->GetTall() / 2;
 	options->SetPos(x, y);
 }
+
+//=============================================================================
+void CBaseModPanel::OpenCreateMultiplayerGameDialog( Panel *parent )
+{
+	CCreateMultiplayerGameDialog *creategame = new CCreateMultiplayerGameDialog( this );
+	creategame->Activate();
+
+	//Put this thing in the middle of the screen
+	int x, y;
+	x = GetWide() / 2;
+	y = GetTall() / 2;
+	x -= creategame->GetWide() / 2;
+	y -= creategame->GetTall() / 2;
+	creategame->SetPos(x, y);
+}
+
+
+//=============================================================================
+void CBaseModPanel::OpenAchievementsDialog( Panel *parent )
+{
+	CAchievementsDialog *achievements = new CAchievementsDialog( this );
+	achievements->Activate();
+
+	//Put this thing in the middle of the screen
+	int x, y;
+	x = GetWide() / 2;
+	y = GetTall() / 2;
+	x -= achievements->GetWide() / 2;
+	y -= achievements->GetTall() / 2;
+	achievements->SetPos(x, y);
+}
+
 
 //=============================================================================
 void CBaseModPanel::OpenServerBrowser()
@@ -1350,7 +1332,7 @@ void CBaseModPanel::OnCommand(const char *command)
 {
 	if ( !Q_stricmp( command, "RestartWithNewLanguage" ) )
 	{
-		const char *pUpdatedAudioLanguage = Audio::GetUpdatedAudioLanguage();
+		const char *pUpdatedAudioLanguage = COptionsSubAudio::GetUpdatedAudioLanguage();
 
 		if ( pUpdatedAudioLanguage[ 0 ] != '\0' )
 		{

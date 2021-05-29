@@ -27,70 +27,6 @@ using namespace vgui;
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
-// for join team combo box
-enum BotGUITeamType
-{
-	BOT_GUI_TEAM_RANDOM	= 0,
-	BOT_GUI_TEAM_CT			= 1,
-	BOT_GUI_TEAM_T			= 2
-};
-
-// these must correlate with above enum
-static const char *joinTeamArg[] = { "any", "ct", "t", NULL };
-
-
-// for bot chatter combo box
-enum BotGUIChatterType
-{
-	BOT_GUI_CHATTER_NORMAL = 0,
-	BOT_GUI_CHATTER_MINIMAL = 1,
-	BOT_GUI_CHATTER_RADIO = 2,
-	BOT_GUI_CHATTER_OFF = 3
-};
-
-// these must correlate with above enum
-static const char *chatterArg[] = { "normal", "minimal", "radio", "off", NULL };
-
-
-extern void UTIL_StripInvalidCharacters( char *pszInput );
-
-
-//-----------------------------------------------------------------------------
-void CCreateMultiplayerGameBotPage::SetJoinTeamCombo( const char *team )
-{
-	if (team)
-	{
-		for( int i=0; joinTeamArg[i]; ++i )
-			if (!stricmp( team, joinTeamArg[i] ))
-			{
-				m_joinTeamCombo->ActivateItemByRow( i );
-				return;
-			}
-	}
-	else
-	{
-		m_joinTeamCombo->ActivateItemByRow( BOT_GUI_TEAM_RANDOM );
-	}
-}
-
-//-----------------------------------------------------------------------------
-void CCreateMultiplayerGameBotPage::SetChatterCombo( const char *chatter )
-{
-	if (chatter)
-	{
-		for( int i=0; chatterArg[i]; ++i )
-			if (!stricmp( chatter, chatterArg[i] ))
-			{
-				m_chatterCombo->ActivateItemByRow( i );
-				return;
-			}
-	}
-	else
-	{
-		m_joinTeamCombo->ActivateItemByRow( BOT_GUI_CHATTER_NORMAL );
-	}
-}
-
 //-----------------------------------------------------------------------------
 // Constructor
 //-----------------------------------------------------------------------------
@@ -98,65 +34,37 @@ CCreateMultiplayerGameBotPage::CCreateMultiplayerGameBotPage( vgui::Panel *paren
 {
 	m_pSavedData = botKeys;
 
-	m_allowRogues = new CCvarToggleCheckButton( this, "BotAllowRogueCheck", "", "bot_allow_rogues" );
-	m_allowPistols = new CCvarToggleCheckButton( this, "BotAllowPistolsCheck", "", "bot_allow_pistols" );
-	m_allowShotguns = new CCvarToggleCheckButton( this, "BotAllowShotgunsCheck", "", "bot_allow_shotguns" );
-	m_allowSubmachineGuns = new CCvarToggleCheckButton( this, "BotAllowSubmachineGunsCheck", "", "bot_allow_sub_machine_guns" );
-	m_allowRifles = new CCvarToggleCheckButton( this, "BotAllowRiflesCheck", "", "bot_allow_rifles" );
-	m_allowMachineGuns = new CCvarToggleCheckButton( this, "BotAllowMachineGunsCheck", "", "bot_allow_machine_guns" );
-	m_allowGrenades = new CCvarToggleCheckButton( this, "BotAllowGrenadesCheck", "", "bot_allow_grenades" );
-	m_allowSnipers = new CCvarToggleCheckButton( this, "BotAllowSnipersCheck", "", "bot_allow_snipers" );
-#ifdef CS_SHIELD_ENABLED
-	m_allowShields = new CCvarToggleCheckButton( this, "BotAllowShieldCheck", "", "bot_allow_shield" );
-#endif // CS_SHIELD_ENABLED
+	m_TFBotjoinAfterPlayer = new CCvarToggleCheckButton( this, "BotJoinAfterPlayerCheck", "", "tf_bot_join_after_player" );
+	m_TFBotAutoVacate = new CCvarToggleCheckButton( this, "BotAutoVacateCheck", "", "tf_bot_auto_vacate" );
+	m_TFBotMeleeOnly = new CCvarToggleCheckButton( this, "BotMeleeOnlyCheck", "", "tf_bot_melee_only" );
+	m_TFBotPrefixDifficulty = new CCvarToggleCheckButton( this, "BotPrefixDifficulty", "", "tf_bot_prefix_name_with_difficulty" );
+	m_TFBotKeepClass = new CCvarToggleCheckButton( this, "BotKeepClassCheck", "", "tf_bot_keep_class_after_death" );
+	m_TFBotOfflinePratice = new CCvarToggleCheckButton( this, "BotOfflinePraticeCheck", "", "tf_bot_offline_practice" );
+	m_TFBotUseItems = new CCvarToggleCheckButton( this, "BotUseItemsCheck", "", "tf_bot_use_items" );
+	m_TFBotEconRandom = new CCvarToggleCheckButton( this, "BotEconRandomCheck", "", "tf_bot_random_loadouts" );
+	m_TFBotKeepEcon = new CCvarToggleCheckButton( this, "BotKeepEconCheck", "", "tf_bot_keep_items_after_death" );
 
-	m_joinAfterPlayer = new CCvarToggleCheckButton( this, "BotJoinAfterPlayerCheck", "", "bot_join_after_player" );
-
-	m_deferToHuman = new CCvarToggleCheckButton( this, "BotDeferToHumanCheck", "", "bot_defer_to_human" );
-
-	// set up team join combo box
-	// NOTE: If order of AddItem is changed, update the associated enum
-	m_joinTeamCombo = new ComboBox( this, "BotJoinTeamCombo", 3, false );
-	m_joinTeamCombo->AddItem( "#Cstrike_Random", NULL );
-	m_joinTeamCombo->AddItem( "#Cstrike_Team_CT", NULL );
-	m_joinTeamCombo->AddItem( "#Cstrike_Team_T", NULL );
-
-	// set up chatter combo box
-	// NOTE: If order of AddItem is changed, update the associated enum
-	m_chatterCombo = new ComboBox( this, "BotChatterCombo", 4, false );
-	m_chatterCombo->AddItem( "#Cstrike_Bot_Chatter_Normal", NULL );
-	m_chatterCombo->AddItem( "#Cstrike_Bot_Chatter_Minimal", NULL );
-	m_chatterCombo->AddItem( "#Cstrike_Bot_Chatter_Radio", NULL );
-	m_chatterCombo->AddItem( "#Cstrike_Bot_Chatter_Off", NULL );
-
-	// create text entry fields for quota and prefix
-	m_prefixEntry = new TextEntry( this, "BotPrefixEntry" );
+	// create text entry fields for quota, prefix and class
+	m_TFBotQuotaMode = new TextEntry( this, "BotQuotaModeEntry" );
+	m_TFBotClass = new TextEntry( this, "BotClassEntry" );
 
 	// set positions and sizes from resources file
 	LoadControlSettings( "Resource/CreateMultiplayerGameBotPage.res" );
 
 	// get initial values from bot keys
-	m_joinAfterPlayer->SetSelected( botKeys->GetInt( "bot_join_after_player", 1 ) );
-	m_allowRogues->SetSelected( botKeys->GetInt( "bot_allow_rogues", 1 ) );
-	m_allowPistols->SetSelected( botKeys->GetInt( "bot_allow_pistols", 1 ) );
-	m_allowShotguns->SetSelected( botKeys->GetInt( "bot_allow_shotguns", 1 ) );
-	m_allowSubmachineGuns->SetSelected( botKeys->GetInt( "bot_allow_sub_machine_guns", 1 ) );
-	m_allowMachineGuns->SetSelected( botKeys->GetInt( "bot_allow_machine_guns", 1 ) );
-	m_allowRifles->SetSelected( botKeys->GetInt( "bot_allow_rifles", 1 ) );
-	m_allowSnipers->SetSelected( botKeys->GetInt( "bot_allow_snipers", 1 ) );
-	m_allowGrenades->SetSelected( botKeys->GetInt( "bot_allow_grenades", 1 ) );
-#ifdef CS_SHIELD_ENABLED
-	m_allowShields->SetSelected( botKeys->GetInt( "bot_allow_shield", 1 ) );
-#endif // CS_SHIELD_ENABLED
-	m_deferToHuman->SetSelected( botKeys->GetInt( "bot_defer_to_human", 1 ) );
+	m_TFBotjoinAfterPlayer->SetSelected( botKeys->GetInt( "tf_bot_join_after_player", 1 ) );
+	m_TFBotAutoVacate->SetSelected( botKeys->GetInt( "tf_bot_auto_vacate", 1 ) );
+	m_TFBotUseItems->SetSelected( botKeys->GetInt( "tf_bot_use_items", 1 ) );
 
-	SetJoinTeamCombo( botKeys->GetString( "bot_join_team", "any" ) );
-	SetChatterCombo( botKeys->GetString( "bot_chatter", "normal" ) );
+	// set tf_bot_quota_mode
+	const char *quota_mode = botKeys->GetString( "tf_bot_quota_mode" );
+	if ( quota_mode )
+		SetControlString( "BotQuotaModeEntry", quota_mode );
 
-	// set bot_prefix
-	const char *prefix = botKeys->GetString( "bot_prefix" );
-	if (prefix)
-		SetControlString( "BotPrefixEntry", prefix );
+	// set tf_bot_force_class
+	const char *tf_class = botKeys->GetString( "tf_bot_force_class" );
+	if ( tf_class )
+		SetControlString( "BotClassEntry", tf_class );
 }
 
 //-----------------------------------------------------------------------------
@@ -199,30 +107,23 @@ void UpdateValue( KeyValues *data, const char *cvarName, const char *value )
 //-----------------------------------------------------------------------------
 void CCreateMultiplayerGameBotPage::OnApplyChanges()
 {
-	UpdateValue( m_pSavedData, "bot_join_after_player", m_joinAfterPlayer->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_rogues", m_allowRogues->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_pistols", m_allowPistols->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_shotguns", m_allowShotguns->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_sub_machine_guns", m_allowSubmachineGuns->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_machine_guns", m_allowMachineGuns->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_rifles", m_allowRifles->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_snipers", m_allowSnipers->IsSelected() );
-	UpdateValue( m_pSavedData, "bot_allow_grenades", m_allowGrenades->IsSelected() );
-#ifdef CS_SHIELD_ENABLED
-	UpdateValue( m_pSavedData, "bot_allow_shield", m_allowShields->IsSelected() );
-#endif // CS_SHIELD_ENABLED
-	UpdateValue( m_pSavedData, "bot_defer_to_human", m_deferToHuman->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_join_after_player", m_TFBotjoinAfterPlayer->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_auto_vacate", m_TFBotAutoVacate->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_melee_only", m_TFBotMeleeOnly->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_prefix_name_with_difficulty", m_TFBotPrefixDifficulty->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_keep_class_after_death", m_TFBotKeepClass->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_offline_practice", m_TFBotOfflinePratice->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_use_items", m_TFBotUseItems->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_random_loadouts", m_TFBotEconRandom->IsSelected() );
+	UpdateValue( m_pSavedData, "tf_bot_keep_items_after_death", m_TFBotKeepEcon->IsSelected() );
 
-	// set bot_join_team
-	UpdateValue( m_pSavedData, "bot_join_team", joinTeamArg[ m_joinTeamCombo->GetActiveItem() ] );
-
-	// set bot_chatter
-	UpdateValue( m_pSavedData, "bot_chatter", chatterArg[ m_chatterCombo->GetActiveItem() ] );
-
-	// set bot_prefix
+	// set tf_bot_quota_mode
 	#define BUF_LENGTH 256
 	char entryBuffer[ BUF_LENGTH ];
-	m_prefixEntry->GetText( entryBuffer, BUF_LENGTH );
-	UpdateValue( m_pSavedData, "bot_prefix", entryBuffer );
-}
+	m_TFBotQuotaMode->GetText( entryBuffer, BUF_LENGTH );
+	UpdateValue( m_pSavedData, "tf_bot_quota_mode", entryBuffer );
 
+	// set tf_bot_force_class
+	m_TFBotClass->GetText( entryBuffer, BUF_LENGTH );
+	UpdateValue( m_pSavedData, "tf_bot_force_class", entryBuffer );
+}
