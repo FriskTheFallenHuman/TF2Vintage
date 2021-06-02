@@ -622,6 +622,8 @@ float CTFMinigun::GetProjectileDamage( void )
 			if ( GetWindingTime() < TF_MINIGUN_PENALTY_TIME + GetSpinUpLength() )
 				flDamageMod = RemapValClamped( GetWindingTime(), 0.2, (TF_MINIGUN_PENALTY_TIME + GetSpinUpLength()), 0.5, 1 );				
 			break;
+			default:
+			break;
 		}
 		
 		if ( flDamageMod != 1.0f )	// If damage modified, adjust.
@@ -652,10 +654,10 @@ float CTFMinigun::GetWeaponSpread( void )
 			if ( GetWindingTime() < TF_MINIGUN_PENALTY_TIME + GetSpinUpLength() )
 				flSpreadMod = RemapValClamped( GetWindingTime(), 0.2, (TF_MINIGUN_PENALTY_TIME + GetSpinUpLength()), 0.5, 1 );				
 			break;
+			default:
+			break;
 		}
-		
-		if ( flSpreadMod != 1.0f )	// If damage modified, adjust.
-			flSpread *= flSpreadMod;
+		flSpread *= flSpreadMod;
 	}
 	
 	return flSpread;

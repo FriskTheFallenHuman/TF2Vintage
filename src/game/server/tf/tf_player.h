@@ -490,6 +490,9 @@ public:
 	bool	m_bIsPlayerAVIP;
 	int		m_iPlayerVIPRanking;
 	
+	int		m_nPrevValidation;
+	int		GetLastValidatedClass() {return m_nPrevValidation;}
+	void	SetLastValidatedClass(int iClass) {m_nPrevValidation = iClass;}
 
 	int					StateGet( void ) const;
 
@@ -502,15 +505,11 @@ public:
 	virtual void		Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget, const Vector *pVelocity );
 
 	bool				ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWeaponBase *pWeapon = NULL );
-	
+
 	void				ValidateWeapons( bool bRegenerate );
-	void				ValidateWeaponSlots( void );
-	
-	bool 				ValidateCurrentSlot(CEconItemView * pNewItem, int iSlot);
-	void 				ModifyWeaponMeters(CTFWeaponBase* pWeapon);
-	
 	void				ValidateWearables( void );
-	void				ValidateWearableSlots( void );
+
+	void 				ModifyWeaponMeters(CTFWeaponBase* pWeapon);
 	
 	void				ManageRegularWeapons( TFPlayerClassData_t *pData );
 	//void				ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData );
@@ -734,7 +733,7 @@ public:
 protected:
 	CTFPlayerClass		m_PlayerClass;
 	int					m_WeaponPreset[TF_CLASS_COUNT_ALL][TF_LOADOUT_SLOT_COUNT];
-
+	
 private:
 	CTFPlayerAnimState *m_PlayerAnimState;
 	int					m_iLastWeaponFireUsercmd;				// Firing a weapon.  Last usercmd we shot a bullet on.

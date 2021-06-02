@@ -93,6 +93,15 @@ void CTFShotgun::UpdatePunchAngles( CTFPlayer *pPlayer )
 // Weapon Scatter Gun functions.
 //
 
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+CTFScatterGun::CTFScatterGun()
+{
+	m_bReloadsSingly = true;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -193,9 +202,7 @@ void CTFScatterGun::Equip( CBaseCombatCharacter *pEquipTo )
 		}
 	}
 
-	int nScatterGunNoReloadSingle = 0;
-	CALL_ATTRIB_HOOK_INT( nScatterGunNoReloadSingle, set_scattergun_no_reload_single );
-	if ( nScatterGunNoReloadSingle == 1 )
+	if ( IsDoubleBarrel() )
 	{
 		m_bReloadsSingly = false;
 		m_bAutoReload = false;
@@ -209,20 +216,24 @@ void CTFScatterGun::Equip( CBaseCombatCharacter *pEquipTo )
 //-----------------------------------------------------------------------------
 void CTFScatterGun::FinishReload()
 {
+	// Finish with the regular code if we're not the Double Barrel.
+	if ( !UsesClipsForAmmo1() || !IsDoubleBarrel() )
+	{
+		BaseClass::FinishReload();
+		return;
+	}
+	
 	CTFPlayer *pOwner = ToTFPlayer( GetOwner() );
 	if ( !pOwner )
 		return;
 
-	if ( !UsesClipsForAmmo1() )
-		return;
-
-	if ( ReloadsSingly() )
-		return;
-
+	// Double Barrels replenish all their clip at once.
 	m_iClip1 += Min( GetMaxClip1() - m_iClip1, pOwner->GetAmmoCount( m_iPrimaryAmmoType ) );
 
+	// Downside to the double barrel is that they will discard any bullets, even unfired ones.
 	if ( !BaseClass::IsEnergyWeapon() )
 		pOwner->RemoveAmmo( GetMaxClip1(), m_iPrimaryAmmoType );
+
 }
 
 //-----------------------------------------------------------------------------
@@ -230,7 +241,7 @@ void CTFScatterGun::FinishReload()
 //-----------------------------------------------------------------------------
 bool CTFScatterGun::SendWeaponAnim( int iActivity )
 {
-	if ( GetTFPlayerOwner() && HasKnockback() )
+	if ( GetTFPlayerOwner() && IsDoubleBarrel() )
 	{
 		switch ( iActivity )
 		{
@@ -285,6 +296,15 @@ bool CTFScatterGun::HasKnockback() const
 	return nScatterGunHasKnockback == 1;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFScatterGun::IsDoubleBarrel() const
+{
+	int nScatterGunNoReloadSingle = 0;
+	CALL_ATTRIB_HOOK_INT(nScatterGunNoReloadSingle, set_scattergun_no_reload_single );
+	return nScatterGunNoReloadSingle == 1;
+}
 
 
 //=============================================================================

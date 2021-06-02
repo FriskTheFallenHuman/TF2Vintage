@@ -66,6 +66,8 @@ public:
 	DECLARE_CLASS( CTFScatterGun, CTFShotgun );
 	DECLARE_NETWORKCLASS(); 
 	DECLARE_PREDICTABLE();
+	
+	CTFScatterGun();
 
 	virtual int		GetWeaponID( void ) const			{ return TF_WEAPON_SCATTERGUN; }
 	virtual void	FireBullet( CTFPlayer *pShooter );
@@ -80,6 +82,7 @@ public:
 	virtual bool	SendWeaponAnim( int iActivity );
 
 	bool			HasKnockback( void ) const;
+	bool 			IsDoubleBarrel( void ) const;
 
 private:
 	bool m_bAutoReload;

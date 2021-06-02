@@ -61,6 +61,7 @@ ConVar tf2v_allcrit( "tf2v_allcrit", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enab
 ConVar tf2v_use_new_weapon_swap_speed( "tf2v_use_new_weapon_swap_speed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enables faster weapon switching." );
 ConVar tf2v_use_new_blackbox( "tf2v_use_new_blackbox", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Trades the +15HP per hit for +20HP per attack." );
 ConVar tf_dev_marked_for_death_lifetime( "tf_dev_marked_for_death_lifetime", "1", FCVAR_DEVELOPMENTONLY | FCVAR_REPLICATED );
+ConVar tf2v_use_faster_reload( "tf2v_use_faster_reload", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Speeds up end of reloads by 1/5 of a second.");
 
 //=============================================================================
 //
@@ -1673,7 +1674,10 @@ bool CTFWeaponBase::DefaultReload( int iClipSize1, int iClipSize2, int iActivity
 	// First, see if we have a reload animation
 	if ( SendWeaponAnim( iActivity ) )
 	{
-		flReloadTime = SequenceDuration();
+		if (tf2v_use_faster_reload.GetBool()) // Modern reload systems speed the "end" of the reload slightly faster than the animation.
+			flReloadTime = SequenceDuration() - 0.2;
+		else	// We reload at the speed of the animation.
+			flReloadTime = SequenceDuration();
 	}
 	else
 	{

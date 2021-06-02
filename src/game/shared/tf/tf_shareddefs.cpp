@@ -406,7 +406,7 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 {
 	{
 	"tf_weapon_shotgun",			// Base weapon to translate
-	NULL,							// Unassigned
+	NULL,
 	NULL,							// Scout
 	NULL,							// Sniper
 	"tf_weapon_shotgun_soldier",	// Soldier
@@ -420,7 +420,7 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 
 	{
 	"tf_weapon_pistol",				// Base weapon to translate
-	NULL,							// Unassigned
+	NULL,
 	"tf_weapon_pistol_scout",		// Scout
 	NULL,							// Sniper
 	NULL,							// Soldier
@@ -433,22 +433,8 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 	},
 
 	{
-	"tf_weapon_shovel",				// Base weapon to translate
-	NULL,							// Unassigned
-	NULL,							// Scout
-	NULL,							// Sniper
-	"tf_weapon_shovel",				// Soldier
-	"tf_weapon_bottle",				// Demoman
-	NULL,							// Medic
-	NULL,							// Heavy
-	NULL,							// Pyro
-	NULL,							// Spy
-	NULL,							// Engineer
-	},
-
-	{
-	"tf_weapon_bottle",				// Base weapon to translate
-	NULL,							// Unassigned
+	"tf_weapon_katana",				// Base weapon to translate
+	NULL,
 	NULL,							// Scout
 	NULL,							// Sniper
 	"tf_weapon_shovel",				// Soldier
@@ -462,7 +448,7 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 
 	{
 	"saxxy",						// Base weapon to translate
-	NULL,							// Unassigned
+	NULL,
 	"tf_weapon_bat",				// Scout
 	"tf_weapon_club",				// Sniper
 	"tf_weapon_shovel",				// Soldier
@@ -476,21 +462,21 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 
 	{
 	"tf_weapon_throwable",			// Base weapon to translate
-	NULL,							// Unassigned
-	"tf_weapon_throwable",			// Scout
-	"tf_weapon_throwable",			// Sniper
-	"tf_weapon_throwable",			// Soldier
-	"tf_weapon_throwable",			// Demoman
-	"tf_weapon_throwable",			// Medic
-	"tf_weapon_throwable",			// Heavy
-	"tf_weapon_throwable",			// Pyro
-	"tf_weapon_throwable",			// Spy
-	"tf_weapon_throwable",			// Engineer		
+	NULL,
+	"tf_weapon_throwable", //UNK_10D88B2
+	"tf_weapon_throwable", //UNK_10D88B2
+	"tf_weapon_throwable", //UNK_10D88B2
+	"tf_weapon_throwable", //UNK_10D88B2
+	"tf_weapon_throwable", //UNK_10D88D0
+	"tf_weapon_throwable", //UNK_10D88B2
+	"tf_weapon_throwable", //UNK_10D88B2
+	"tf_weapon_throwable", //UNK_10D88B2
+	"tf_weapon_throwable", //UNK_10D88B2
 	},
 
 	{
-	"tf_weapon_parachute",				// Base weapon to translate
-	NULL,								// Unassigned
+	"tf_weapon_parachute",			// Base weapon to translate
+	NULL,
 	NULL,								// Scout
 	NULL,								// Sniper
 	"tf_weapon_parachute_primary",		// Soldier
@@ -504,8 +490,8 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 
 	{
 	"tf_weapon_revolver",			// Base weapon to translate
-	NULL,							// Unassigned
-	NULL,							// Scout
+	NULL,
+	NULL, 							// Scout
 	NULL,							// Sniper
 	NULL,							// Soldier
 	NULL,							// Demoman
@@ -515,49 +501,21 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 	"tf_weapon_revolver",			// Spy
 	"tf_weapon_revolver_secondary",	// Engineer
 	},
-	
-	
-	{
-	"tf_wearable_demoshield",		// Base weapon to translate
-	NULL,							// Unassigned
-	NULL,							// Scout
-	"tf_wearable_razorback",		// Sniper
-	NULL,							// Soldier
-	"tf_wearable_demoshield",		// Demoman
-	NULL,							// Medic
-	NULL,							// Heavy
-	NULL,							// Pyro
-	NULL,							// Spy
-	NULL,							// Engineer
-	},
-	
-	{
-	"tf_wearable_razorback",		// Base weapon to translate
-	NULL,							// Unassigned
-	NULL,							// Scout
-	"tf_wearable_razorback",		// Sniper
-	NULL,							// Soldier
-	"tf_wearable_demoshield",		// Demoman
-	NULL,							// Medic
-	NULL,							// Heavy
-	NULL,							// Pyro
-	NULL,							// Spy
-	NULL,							// Engineer
-	},
-	
+
 	{
 	"tf_wearable",					// Base weapon to translate
-	NULL,							// Unassigned
-	"tf_wearable_scout",			// Scout
-	"tf_wearable_sniper",			// Sniper
-	"tf_wearable_soldier",			// Soldier
-	"tf_wearable_demoman",			// Demoman
-	"tf_wearable_medic",			// Medic
-	"tf_wearable_heavy",			// Heavy
-	"tf_wearable_pyro",				// Pyro
-	"tf_wearable_spy",				// Spy
-	"tf_wearable_engineer",			// Engineer
+	NULL,
+	"tf_wearable_scout", 			// Scout
+	"tf_wearable_scout", 			// Sniper
+	"tf_wearable_soldier", 			// Soldier
+	"tf_wearable_demoman", 			// Demoman
+	"tf_wearable_medic", 			// Medic
+	"tf_wearable_heavy", 			// Heavy
+	"tf_wearable_pyro", 			// Pyro
+	"tf_wearable_spy", 				// Spy
+	"tf_wearable_engineer", 		// Engineer
 	},
+	
 };
 
 //-----------------------------------------------------------------------------

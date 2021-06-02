@@ -42,6 +42,11 @@ CEconEntity::CEconEntity()
 	m_pAttributes = this;
 }
 
+CEconEntity::~CEconEntity()
+{
+	m_pAttributes = NULL;
+}
+
 #ifdef CLIENT_DLL
 //-----------------------------------------------------------------------------
 // Purpose: 

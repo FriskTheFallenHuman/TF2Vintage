@@ -569,7 +569,6 @@ CTFPlayer::CTFPlayer()
 	m_lifeState = LIFE_DEAD; // Start "dead".
 	m_iMaxSentryKills = 0;
 	m_flNextNameChangeTime = 0;
-	m_flAccumulatedHealthRegen = 0;
 	m_flLastHealthRegen = 0;
 	m_flNextTimeCheck = gpGlobals->curtime;
 	m_flSpawnTime = 0;
@@ -626,7 +625,6 @@ CTFPlayer::CTFPlayer()
 	m_purgatoryDuration.Invalidate();
 	m_lastCalledMedic.Invalidate();
 }
-
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -725,32 +723,8 @@ void CTFPlayer::RegenThink( void )
 	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
 
 	// We should really only be hitting this path once
-	Assert( ( m_flLastHealthRegen + TF_REGEN_TIME ) < gpGlobals->curtime );
-	if ( ( m_flLastHealthRegen + TF_REGEN_TIME ) < gpGlobals->curtime )
+	if ( ( m_flLastHealthRegen + TF_REGEN_TIME ) > gpGlobals->curtime )
 		return;
-
-	// Health drain/regen attribute.
-	// If negative, drains health per second. If positive, heals based on the last time damage was taken.
-	int iHealthRegen = 0;
-	CALL_ATTRIB_HOOK_INT( iHealthRegen, add_health_regen );
-	
-	// Health drain/regen attribute, based on the older passive healing per second model.
-	int iHealthRegenLegacy = 0;
-	CALL_ATTRIB_HOOK_INT( iHealthRegenLegacy, add_health_regen_passive );
-	
-	// If we heal, use an algorithm similar to medic's to determine healing.
-	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() )
-	{
-		if ( TFGameRules()->IsPVEModeActive() ) // Regen is static in MVM.
-		{
-			// Scale health regen to the last time we took damage.
-			float flTimeSinceDamageGeneric = gpGlobals->curtime - GetLastDamageTime();
-			// We use the same time table as medic, but our range is 1HP to add_health_regen instead.
-			float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthRegen );
-
-			m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScaleGeneric;
-		}
-	}
 
 	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
 	{
@@ -764,15 +738,42 @@ void CTFPlayer::RegenThink( void )
 
 		m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScale;
 	}
+	
+	// Health drain/regen attribute.
+	// If negative, drains health per second. If positive, heals based on the last time damage was taken.
+	int iHealthRegen = 0;
+	CALL_ATTRIB_HOOK_INT( iHealthRegen, add_health_regen );
+	
+	// Health drain/regen attribute, based on the older passive healing per second model.
+	int iHealthRegenLegacy = 0;
+	CALL_ATTRIB_HOOK_INT( iHealthRegenLegacy, add_health_regen_passive );
+	
+	// If we heal, use an algorithm similar to medic's to determine healing, if new health regen is on.
+	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() )
+	{
+			// Scale health regen to the last time we took damage.
+			float flTimeSinceDamageGeneric = gpGlobals->curtime - GetLastDamageTime();
+			// We use the same time table as medic, but our range is 1HP to add_health_regen instead.
+			float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthRegen );
 
+			m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScaleGeneric;
+	}
+	else
+	{
+		// Add/subtract this as a flat number.
+		m_flAccumulatedHealthRegen += iHealthRegen;
+	}
+	
+	// Non-negotiable flat number.
 	m_flAccumulatedHealthRegen += iHealthRegenLegacy;
 
 	int nHealthChange = 0; 
-	if ( m_flAccumulatedHealthRegen >= 1.0f )
+	if ( m_flAccumulatedHealthRegen > 0 )
 	{
 		nHealthChange = floor( m_flAccumulatedHealthRegen );
-
-		int nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC );
+		int nHealthRestored = 0;
+		if (nHealthChange >= 1)
+			nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC );
 		if ( nHealthRestored > 0 )
 		{
 			IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
@@ -787,10 +788,11 @@ void CTFPlayer::RegenThink( void )
 			}
 		}
 	}
-	else if ( m_flAccumulatedHealthRegen < -1.0f )
+	else if ( m_flAccumulatedHealthRegen < 0 )
 	{
 		nHealthChange = ceil( m_flAccumulatedHealthRegen );
-		TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
+		if (nHealthChange <= -1)
+			TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
 	}
 
 	if ( GetHealth() < GetMaxHealth() && nHealthChange != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )
@@ -883,6 +885,7 @@ CTFPlayer::~CTFPlayer()
 {
 	DestroyRagdoll();
 	m_PlayerAnimState->Release();
+	m_pAttributes = NULL;
 }
 
 
@@ -1354,14 +1357,12 @@ void CTFPlayer::Spawn()
 	CreateViewModel( 1 );
 	// Make sure it has no model set, in case it had one before
 	GetViewModel( 1 )->SetWeaponModel( NULL, NULL );
-	
-	m_Shared.SetFeignReady( false );
-	m_Shared.SetHasRecoiled( false );
 
 	// Kind of lame, but CBasePlayer::Spawn resets a lot of the state that we initially want on.
 	// So if we're in the welcome state, call its enter function to reset 
 	if ( m_Shared.InState( TF_STATE_WELCOME ) )
 	{
+		SetLastValidatedClass(m_PlayerClass.GetClassIndex());
 		StateEnterWELCOME();
 	}
 
@@ -1479,6 +1480,11 @@ void CTFPlayer::Spawn()
 	m_Shared.SetShieldChargeMeter( 100.0f );
 
 	m_bDiedWithBombHead = false;
+	
+	m_flAccumulatedHealthRegen = 0;
+
+	m_Shared.SetFeignReady( false );
+	m_Shared.SetFeigningDeath( false );
 
 	// This makes the surrounding box always the same size as the standing collision box
 	// helps with parts of the hitboxes that extend out of the crouching hitbox, eg with the
@@ -1772,22 +1778,26 @@ bool CTFPlayer::ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWea
 {
 	if ( pItem1 && pItem2 )
 	{
-		// For Weapons:
-		// Item might have different entities for each class (i.e. shotgun).
+		// Basic check:
+		// See what the last class we validated with was, and reject if it's different than the one we're using.
 		int iClass = m_PlayerClass.GetClassIndex();
+		if (iClass != GetLastValidatedClass())
+			return false;
+
+		// Allows us to check the item definition, which also works with wearables.
+		int nItemIndex1 = -1; nItemIndex1 = pItem1->GetItemDefIndex();
+		int nItemIndex2 = -1; nItemIndex2 = pItem2->GetItemDefIndex();
+		if ( (nItemIndex1 == -1 && nItemIndex2) || (nItemIndex1 && nItemIndex2 == -1 ) || ( (nItemIndex1 != -1 && nItemIndex2 != -1) && (nItemIndex1 != nItemIndex2) ) )
+			return false;
+		
+		// Failsafe:
+		// Item might have different names for each class (i.e. shotgun).
 		const char* pszClass1 = TranslateWeaponEntForClass(pItem1->GetEntityName(), iClass);
 		const char* pszClass2 = TranslateWeaponEntForClass(pItem2->GetEntityName(), iClass);
-		if (pszClass1 != NULL || pszClass2 != NULL) // This is a named weapon entity, check it.
-		{
-			if (V_strcmp(pszClass1, pszClass2) != 0)
-				return false;
-		}
+		if ( (!pszClass1 && pszClass2) || (pszClass1 && !pszClass2) || ( (pszClass1 && pszClass2) && Q_stricmp( pszClass1, pszClass2 ) ) )
+			return false;
 		
-		// Allows us to check the item definition, which also works with wearables.
-		int nItemIndex1 = pItem1->GetItemDefIndex();
-		int nItemIndex2 = pItem2->GetItemDefIndex();
-		if (nItemIndex1 == nItemIndex2)
-			return true;
+		return true;
 	}
 
 	return false;
@@ -1828,12 +1838,12 @@ void CTFPlayer::GiveDefaultItems()
 	// Give grenades.
 	if( tf_enable_grenades.GetBool() )
 		ManageGrenades( pData );
-	
-	// Update bodygroups and everything dealing with inventory processing.
-	PostInventoryApplication();
 
 	// Give a builder weapon for each object the playerclass is allowed to build
 	ManageBuilderWeapons( pData );
+	
+	// Update bodygroups and everything dealing with inventory processing.
+	PostInventoryApplication();
 
 	// Equip weapons set by tf_player_equip
 	CBaseEntity *pWeaponEntity = NULL;
@@ -2016,57 +2026,89 @@ void CTFPlayer::ManageBuilderWeapons( TFPlayerClassData_t *pData )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Do real-time validation on the current slot. True means new item.
+// Purpose: 
 //-----------------------------------------------------------------------------
-bool CTFPlayer::ValidateCurrentSlot(CEconItemView* pNewItem, int iSlot)
+void CTFPlayer::ValidateWeapons( bool bRegenerate )
 {
-	bool bFreshItem = true;
-	CTFWeaponBase* pCurWeapon = assert_cast<CTFWeaponBase*>( Weapon_GetSlot(iSlot) );
-	CTFWearable *pCurWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot(iSlot) );
-	CEconItemView* pCurrentLoadoutItem = NULL;
-	if (pCurWeapon)
+	int iClass = m_PlayerClass.GetClassIndex();
+
+	for ( int i = 0; i < WeaponCount(); i++ )
 	{
-		pCurrentLoadoutItem = pCurWeapon->GetItem();
-	}
-	else if (pCurWearable)
-	{
-		pCurrentLoadoutItem = pCurWearable->GetItem();
-	}
-	if (pCurrentLoadoutItem && pNewItem)
-	{	
-		// Check if the current item and the new item are different.
-		if ( ItemsMatch( pCurrentLoadoutItem, pNewItem ) )
+		CTFWeaponBase *pWeapon = assert_cast<CTFWeaponBase *>( GetWeapon( i ) );
+		if ( pWeapon == nullptr )
+			continue;
+
+		// Skip builder as we'll handle it separately.
+		if ( pWeapon->IsWeapon( TF_WEAPON_BUILDER ) )
+			continue;
+
+		CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
+
+		if ( pItemDef )
 		{
-			bFreshItem = false;
+			int iSlot = pItemDef->GetLoadoutSlot( iClass );
+			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
+
+			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
+			{
+
+				ModifyWeaponMeters(pWeapon);
+
+				// If this is not a weapon we're supposed to have in this loadout slot then nuke it.
+				// Either changed class or changed loadout.
+				if ( pWeapon == GetActiveWeapon() )
+					pWeapon->Holster();
+
+				Weapon_Detach( pWeapon );
+				UTIL_Remove( pWeapon );
+			}
+			else if ( bRegenerate )
+			{
+				pWeapon->ChangeTeam( GetTeamNumber() );
+				pWeapon->GiveDefaultAmmo();
+
+				if ( m_bRegenerating == false )
+				{
+					pWeapon->WeaponReset();
+				}
+			}
 		}
 	}
 	
-	// This is a new item or different, nuke the old one just in case we haven't done this already.
-	if (bFreshItem)
-	{
-		if (pCurWeapon)
-		{
-			ModifyWeaponMeters(pCurWeapon);
-										
-			// Holster our active weapon
-			if (pCurWeapon == GetActiveWeapon())
-			pCurWeapon->Holster();
-
-			Weapon_Detach(pCurWeapon);
-			UTIL_Remove(pCurWeapon);
-		}
-		else if (pCurWearable)
-		{
-			RemoveWearable(pCurWearable);
-			UTIL_Remove(pCurWearable);
-		}
-	}
-					
-	return bFreshItem;
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Modified the Weapon Meters on new items.
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::ValidateWearables( void )
+{
+	int iClass = m_PlayerClass.GetClassIndex();
+
+	for ( int i = 0; i < GetNumWearables(); i++ )
+	{
+		CEconWearable *pWearable = GetWearable( i );
+		if ( pWearable == nullptr )
+			continue;
+
+		CEconItemDefinition *pItemDef = pWearable->GetItem()->GetStaticData();
+		if ( pItemDef )
+		{
+			int iSlot = pItemDef->GetLoadoutSlot( iClass );
+			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
+
+			if (!ItemsMatch(pWearable->GetItem(), pLoadoutItem) )
+			{
+				// Not supposed to carry this wearable, nuke it.
+				RemoveWearable( pWearable );
+				UTIL_Remove(pWearable);
+			}
+		}
+	}
+	
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Modifies the Weapon Meters on new items.
 //-----------------------------------------------------------------------------
 void CTFPlayer::ModifyWeaponMeters(CTFWeaponBase* pWeapon)
 {
@@ -2097,193 +2139,14 @@ void CTFPlayer::ModifyWeaponMeters(CTFWeaponBase* pWeapon)
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFPlayer::ValidateWeapons( bool bRegenerate )
-{
-	int iClass = m_PlayerClass.GetClassIndex();
-
-	for ( int i = 0; i < WeaponCount(); i++ )
-	{
-		CTFWeaponBase *pWeapon = assert_cast<CTFWeaponBase *>( GetWeapon( i ) );
-		if ( pWeapon == nullptr )
-			continue;
-
-		// Skip builder as we'll handle it separately.
-		if ( pWeapon->IsWeapon( TF_WEAPON_BUILDER ) )
-			continue;
-
-		CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
-
-		if ( pItemDef )
-		{
-			int iSlot = pItemDef->GetLoadoutSlot( iClass );
-			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
-
-			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
-			{
-
-				ModifyWeaponMeters(pWeapon);
-				
-				// If this is not a weapon we're supposed to have in this loadout slot then nuke it.
-				// Either changed class or changed loadout.
-				if ( pWeapon == GetActiveWeapon() )
-					pWeapon->Holster();
-
-				Weapon_Detach( pWeapon );
-				UTIL_Remove( pWeapon );
-			}
-			else if ( bRegenerate )
-			{
-				pWeapon->ChangeTeam( GetTeamNumber() );
-				pWeapon->GiveDefaultAmmo();
-
-				if ( m_bRegenerating == false )
-				{
-					pWeapon->WeaponReset();
-				}
-			}
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Validates weapon slots.
-//-----------------------------------------------------------------------------
-void CTFPlayer::ValidateWeaponSlots(void)
-{
-	int iClass = m_PlayerClass.GetClassIndex();
-	// Validate weapons by slot.
-	for (int i = 0; i < TF_PLAYER_WEAPON_COUNT; ++i)
-	{
-		CTFWeaponBase* pWeapon = assert_cast<CTFWeaponBase*>(Weapon_GetSlot(i));
-		if (pWeapon == nullptr)
-			continue;
-
-		// Skip builder as we'll handle it separately.
-		if (pWeapon->IsWeapon(TF_WEAPON_BUILDER))
-			continue;
-
-		CEconItemDefinition* pItemDef = pWeapon->GetItem()->GetStaticData();
-
-		if (pItemDef)
-		{
-			int iSlot = pItemDef->GetLoadoutSlot(iClass);
-			CEconItemView* pLoadoutItem = GetLoadoutItem(iClass, iSlot);
-
-			if (!ItemsMatch(pWeapon->GetItem(), pLoadoutItem, pWeapon))
-			{
-				
-				ModifyWeaponMeters(pWeapon);
-				
-				// Holster our active weapon
-				if (pWeapon == GetActiveWeapon())
-					pWeapon->Holster();
-
-				Weapon_Detach(pWeapon);
-				UTIL_Remove(pWeapon);
-			}
-		}
-	}
-
-	// Validate wearables by slot.
-	for (int i = 0; i < TF_PLAYER_WEAPON_COUNT; ++i)
-	{
-		if (!GetWearableForLoadoutSlot(i))
-			continue;
-
-		CTFWearable* pWearable = assert_cast<CTFWearable*>(GetWearableForLoadoutSlot(i));
-
-		if (pWearable == nullptr)
-			continue;
-
-		CEconItemDefinition* pItemDef = pWearable->GetItem()->GetStaticData();
-
-		if (pItemDef)
-		{
-			int iSlot = pItemDef->GetLoadoutSlot(iClass);
-			CEconItemView* pLoadoutItem = GetLoadoutItem(iClass, iSlot);
-
-			if (!ItemsMatch(pWearable->GetItem(), pLoadoutItem))
-			{
-				// Not supposed to carry this wearable, nuke it.
-				RemoveWearable(pWearable);
-				UTIL_Remove(pWearable);
-			}
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CTFPlayer::ValidateWearables( void )
-{
-	int iClass = m_PlayerClass.GetClassIndex();
-
-	for ( int i = 0; i < GetNumWearables(); i++ )
-	{
-		CEconWearable *pWearable = GetWearable( i );
-		if ( pWearable == nullptr )
-			continue;
-
-		CEconItemDefinition *pItemDef = pWearable->GetItem()->GetStaticData();
-		if ( pItemDef )
-		{
-			int iSlot = pItemDef->GetLoadoutSlot( iClass );
-			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
-
-			if (!ItemsMatch(pWearable->GetItem(), pLoadoutItem) )
-			{
-				// Not supposed to carry this wearable, nuke it.
-				RemoveWearable( pWearable );
-				UTIL_Remove(pWearable);
-			}
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Validates cosmetic slots.
-//-----------------------------------------------------------------------------
-void CTFPlayer::ValidateWearableSlots( void )
-{
-	int iClass = m_PlayerClass.GetClassIndex();
-	// Validate wearables by slot.
-	for ( int i = TF_FIRST_COSMETIC_SLOT; i <= TF_LAST_COSMETIC_SLOT; ++i )
-	{	
-		if (!GetWearableForLoadoutSlot( i ))
-			continue;
-		
-		CTFWearable *pWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot( i ) );
-		
-		if ( pWearable == nullptr )
-			continue;
-			
-		CEconItemDefinition *pItemDef = pWearable->GetItem()->GetStaticData();
-
-		if (pItemDef)
-		{
-			int iSlot = pItemDef->GetLoadoutSlot(iClass);
-			CEconItemView *pLoadoutItem = GetLoadoutItem(iClass, iSlot);
-
-			if (!ItemsMatch(pWearable->GetItem(), pLoadoutItem))
-			{
-				// Not supposed to carry this wearable, nuke it.
-				RemoveWearable(pWearable);
-				UTIL_Remove(pWearable);
-			}
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
 void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 {
 	CBaseCombatWeapon *pActiveWeapon = m_hActiveWeapon.Get();
 
 	// Validate our inventory.
 	ValidateWeapons( true );
+	ValidateWearables();
+	SetLastValidatedClass(m_PlayerClass.GetClassIndex());
 
 	for (int iSlot = 0; iSlot < TF_PLAYER_WEAPON_COUNT; ++iSlot)
 	{
@@ -2303,10 +2166,9 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 		
 		// Give us an item from the inventory.
 		CEconItemView *pItem = GetLoadoutItem( m_PlayerClass.GetClassIndex(), iSlot );
-		const char *pszClassname = NULL;
 		if ( pItem)
 		{
-			pszClassname = pItem->GetEntityName();
+			const char *pszClassname = pItem->GetEntityName();
 			CEconItemDefinition *pItemDef = pItem->GetStaticData();
 			Assert( pszClassname );
 			bool bWhiteListedWeapon = true; // Defaulted to true, since whitelisting is a niche server option.
@@ -2320,67 +2182,65 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 			bool bStockItem = false;
 			
 			// Only run these checks when necessary.
-			if (pItemDef)
-			{
-				if ( tf2v_enforce_whitelist.GetBool() && !pItemDef->baseitem ) 	// Checks if it's allowed on the server whitelist. Baseitems are always allowed.
-					bWhiteListedWeapon = IsWhiteListed(pszClassname);
-					
-				if ( !tf2v_allow_reskins.GetBool() )		// Checks if it's a weapon reskin.
-					bIsReskin = pItemDef->is_reskin;
-				
-				if ( !tf2v_allow_demoknights.GetBool() )	// Checks if it's a Demoknight item.
-					bIsDemoknight = pItemDef->demoknight;
-					
-				if ( !tf2v_allow_mod_weapons.GetBool() )	// Checks if it's a custom weapon.
-					bIsCustomContent = pItemDef->is_custom_content;
-					
-				if ( !tf2v_allow_cut_weapons.GetBool() )	// Checks if it's a cut weapon.
-					bIsCutContent = pItemDef->is_cut_content;
-					
-				if ( !tf2v_allow_multiclass_weapons.GetBool() )	// Checks if it's a multiclass custom weapon.
-					bIsMultiClassItem = pItemDef->is_multiclass_item;
-					
-				if ( pItemDef->baseitem )	// Check if this is a stock item.
-					bStockItem = true;
-				
-				if ( tf2v_force_year_weapons.GetBool() && !bStockItem )
-				{
-					if ( tf2v_allowed_year_weapons.GetInt() <= 2007 )
-					{
-						if ( pItemDef->year > 2007 ) 
-							bWhiteListedWeapon = false;
-					}
-					else
-					{
-						if ( pItemDef->year > tf2v_allowed_year_weapons.GetInt())
-							bWhiteListedWeapon = false;
-					}
-				}
-				
-				// If it's special, check access.
-				if ( pItemDef->specialitem )
-				{
-					CTFPlayer *pPlayer = this;
-					if ( !pPlayer->m_bIsPlayerADev && ( pPlayer->m_iPlayerVIPRanking != -1 ) )
-						bIsSpecialRestricted = true;
-				}
 			
-				// Checks for holiday restrictions.
-				// We don't want to always execute this, so only execute when we have a holiday restriction listed.
-				if ( pItemDef->GetHolidayRestriction() )
+			if ( tf2v_enforce_whitelist.GetBool() && !pItemDef->baseitem ) 	// Checks if it's allowed on the server whitelist. Baseitems are always allowed.
+				bWhiteListedWeapon = IsWhiteListed(pszClassname);
+				
+			if ( !tf2v_allow_reskins.GetBool() )		// Checks if it's a weapon reskin.
+				bIsReskin = pItemDef->is_reskin;
+			
+			if ( !tf2v_allow_demoknights.GetBool() )	// Checks if it's a Demoknight item.
+				bIsDemoknight = pItemDef->demoknight;
+				
+			if ( !tf2v_allow_mod_weapons.GetBool() )	// Checks if it's a custom weapon.
+				bIsCustomContent = pItemDef->is_custom_content;
+				
+			if ( !tf2v_allow_cut_weapons.GetBool() )	// Checks if it's a cut weapon.
+				bIsCutContent = pItemDef->is_cut_content;
+				
+			if ( !tf2v_allow_multiclass_weapons.GetBool() )	// Checks if it's a multiclass custom weapon.
+				bIsMultiClassItem = pItemDef->is_multiclass_item;
+				
+			if ( pItemDef->baseitem )	// Check if this is a stock item.
+				bStockItem = true;
+			
+			if ( tf2v_force_year_weapons.GetBool() && !bStockItem )
+			{
+				if ( tf2v_allowed_year_weapons.GetInt() <= 2007 )
 				{
-					bHolidayRestrictedItem = true;
-					if ( ( TFGameRules()->IsHolidayActive( kHoliday_Halloween ) )  && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoon ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoonOrValentines ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon_or_valentines") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_Christmas ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "christmas") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_TF2Birthday ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "birthday") == 0 ) )
-						bHolidayRestrictedItem = false;
+					if ( pItemDef->year > 2007 ) 
+						bWhiteListedWeapon = false;
 				}
+				else
+				{
+					if ( pItemDef->year > tf2v_allowed_year_weapons.GetInt())
+						bWhiteListedWeapon = false;
+				}
+			}
+			
+			// If it's special, check access.
+			if ( pItemDef->specialitem )
+			{
+				CTFPlayer *pPlayer = this;
+				if ( !pPlayer->m_bIsPlayerADev && ( pPlayer->m_iPlayerVIPRanking != -1 ) )
+					bIsSpecialRestricted = true;
+			}
+		
+			// Checks for holiday restrictions.
+			// We don't want to always execute this, so only execute when we have a holiday restriction listed.
+			if ( pItemDef->GetHolidayRestriction() )
+			{
+				bHolidayRestrictedItem = true;
+				if ( ( TFGameRules()->IsHolidayActive( kHoliday_Halloween ) )  && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoon ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoonOrValentines ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon_or_valentines") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_Christmas ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "christmas") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_TF2Birthday ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "birthday") == 0 ) )
+					bHolidayRestrictedItem = false;
 			}
 			
 			if  ( !bWhiteListedWeapon || bIsReskin || bHolidayRestrictedItem || bIsSpecialRestricted || bIsDemoknight || bIsCutContent || bIsMultiClassItem ) // If the weapon is banned, swap for a stock weapon.
@@ -2408,13 +2268,6 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 				}
 			}
 			
-		}
-		
-		// Run this right before giving ourselves the item as a check if this is a fresh item.
-		ValidateCurrentSlot(pItem, iSlot);
-			
-		if (pItem)
-		{
 			CEconEntity* pEntity = dynamic_cast<CEconEntity*>(GiveNamedItem(pszClassname, 0, pItem));
 			if ( pEntity )
 			{
@@ -2425,6 +2278,9 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 
 	// We may have added weapons that make others invalid. Recheck.
 	ValidateWeapons( false );
+	// Check if we still have any items (such as wearables) we shouldn't have.
+	ValidateWearables();
+	
 
 	if ( m_hActiveWeapon.Get() && pActiveWeapon != m_hActiveWeapon )
 	{
@@ -2641,10 +2497,9 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 		if ( pItem == GetTFInventory()->GetItem( m_PlayerClass.GetClassIndex(), iSlot, 0 ) )
 			continue;
 
-		const char *pszClassname = NULL;
 		if ( pItem )
 		{
-			pszClassname = pItem->GetEntityName();
+			const char *pszClassname = pItem->GetEntityName();
 			CEconItemDefinition *pItemDef = pItem->GetStaticData();
 			
 			Assert( pszClassname );
@@ -2652,47 +2507,27 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 			bool bWhiteListedCosmetic = true; // Only concerned with this when it's before the item's time (Time Paradox!)
 			bool bIsSpecialRestricted = false;
 			
-			if (pItemDef)
+			if ( tf2v_force_year_cosmetics.GetBool() )
 			{
-				if ( tf2v_force_year_cosmetics.GetBool() )
+				if ( tf2v_allowed_year_cosmetics.GetInt() <= 2007 )
 				{
-					if ( tf2v_allowed_year_cosmetics.GetInt() <= 2007 )
-					{
-						// Prevent the value from being below 2007.
-						if ( (pItemDef->year) > 2007 ) 
-							bWhiteListedCosmetic = false;
-					}
-					else
-					{
-						if ( (pItemDef->year) > tf2v_allowed_year_cosmetics.GetInt() )
-							bWhiteListedCosmetic = false;
-					}
+					// Prevent the value from being below 2007.
+					if ( (pItemDef->year) > 2007 ) 
+						bWhiteListedCosmetic = false;
 				}
-				
-				// If it's special, check access.
-				if ( pItemDef->specialitem )
+				else
 				{
-					CTFPlayer *pPlayer = this;
-					if ( pPlayer->m_iPlayerVIPRanking != -1 )
-						bIsSpecialRestricted = true;
+					if ( (pItemDef->year) > tf2v_allowed_year_cosmetics.GetInt() )
+						bWhiteListedCosmetic = false;
 				}
-				
-				// Checks for holiday restrictions.
-				// We don't want to always execute this, so only execute when we have a holiday restriction listed.
-				if ( pItemDef->GetHolidayRestriction() )
-				{
-					bHolidayRestrictedItem = true;
-					if ( ( TFGameRules()->IsHolidayActive( kHoliday_Halloween ) )  && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoon ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoonOrValentines ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon_or_valentines") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_Christmas ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "christmas") == 0 ) )
-						bHolidayRestrictedItem = false;
-					else if ( ( TFGameRules()->IsHolidayActive( kHoliday_TF2Birthday ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "birthday") == 0 ) )
-						bHolidayRestrictedItem = false;
-				}
+			}
+			
+			// If it's special, check access.
+			if ( pItemDef->specialitem )
+			{
+				CTFPlayer *pPlayer = this;
+				if ( pPlayer->m_iPlayerVIPRanking != -1 )
+					bIsSpecialRestricted = true;
 			}
 			
 			// Limit the amount of max misc slots based on our convar.
@@ -2735,20 +2570,31 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 					break;
 			}
 			
+			// Checks for holiday restrictions.
+			// We don't want to always execute this, so only execute when we have a holiday restriction listed.
+			if ( pItemDef->GetHolidayRestriction() )
+			{
+				bHolidayRestrictedItem = true;
+				if ( ( TFGameRules()->IsHolidayActive( kHoliday_Halloween ) )  && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoon ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_HalloweenOrFullMoonOrValentines ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "halloween_or_fullmoon_or_valentines") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_Christmas ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "christmas") == 0 ) )
+					bHolidayRestrictedItem = false;
+				else if ( ( TFGameRules()->IsHolidayActive( kHoliday_TF2Birthday ) ) && ( V_stricmp(pItemDef->GetHolidayRestriction(), "birthday") == 0 ) )
+					bHolidayRestrictedItem = false;
+			}
+			
 			if ( ( bHolidayRestrictedItem == true ) || ( bWhiteListedCosmetic == false ) || ( bIsSpecialRestricted == true ) )  // If the item is banned, swap to the default cosmetic.
 			{
 				// Normally we would give the default item, but since we don't give default cosmetics we bail.
-				ValidateCurrentSlot(pItem, iSlot);
 				continue;
 			}
-		}
 			
-		// Run this right before giving ourselves the item as a check if this is a fresh item.
-		ValidateCurrentSlot(pItem, iSlot);
-		
-		if (pItem)
-		{
 			CEconEntity *pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
+
 			if ( pEntity )
 			{
 				pEntity->GiveTo( this );
@@ -8518,6 +8364,7 @@ void CTFPlayer::StateEnterACTIVE()
 	m_flLastAction = gpGlobals->curtime;
 	m_bIsIdle = false;
 
+	m_flLastHealthRegen = gpGlobals->curtime;
 	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
 }
 
@@ -8940,6 +8787,10 @@ void CTFPlayer::ForceRespawn( void )
 
 	// remove invisibility very quickly	
 	m_Shared.FadeInvis( 0.1 );
+	
+	// Clean up any feigning.
+	m_Shared.SetFeigningDeath( false );
+	m_Shared.SetFeignReady( false );
 
 	// Stop any firing that was taking place before respawn.
 	m_nButtons = 0;

@@ -125,6 +125,7 @@ extern ConVar tf_mm_servermode;
 
 #ifdef USES_ECON_ITEMS
 #include "econ_item_system.h"
+#include "tf_inventory.h"
 #endif // USES_ECON_ITEMS
 
 #ifdef CSTRIKE_DLL // BOTPORT: TODO: move these ifdefs out
@@ -1152,6 +1153,11 @@ bool CServerGameDLL::IsRestoring()
 bool CServerGameDLL::LevelInit( const char *pMapName, char const *pMapEntities, char const *pOldLevel, char const *pLandmarkName, bool loadGame, bool background )
 {
 	VPROF("CServerGameDLL::LevelInit");
+
+#ifdef USES_ECON_ITEMS
+	// Reload the inventory on a new map.
+	GetTFInventory()->Init();
+#endif // USES_ECON_ITEMS
 
 	ResetWindspeed();
 	UpdateChapterRestrictions( pMapName );

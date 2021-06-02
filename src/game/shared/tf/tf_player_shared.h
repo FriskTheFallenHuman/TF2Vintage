@@ -306,7 +306,8 @@ public:
 	bool	IsFeignDeathReady( void )			{ return m_bFeignDeathReady; }
 
 	bool	IsFeigningDeath( void ) const		{ return m_bFeigningDeath; }
-
+	void	SetFeigningDeath( bool bSet )		{ m_bFeigningDeath = bSet; }
+	
 	bool	IsJumping( void )					{ return m_bJumping; }
 	void	SetJumping( bool bJumping );
 	bool	CanGoombaStomp( void );

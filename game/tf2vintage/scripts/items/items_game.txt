@@ -979,6 +979,7 @@
 			"item_type_name"	"#TF_Weapon_Scattergun"
 			"item_name"	"#TF_Weapon_Scattergun"
 			"item_slot"	"primary"
+			"anim_slot"	"primary"
 			"image_inventory"	"backpack/weapons/c_models/c_scattergun"
 			"model_player"	"models/weapons/c_models/c_scattergun.mdl"
 			"used_by_classes"
@@ -3800,7 +3801,7 @@
 		"weapon_reskin"
 		{
 			"is_reskin"			"1"
-			"item_quality" "genuine"
+			"item_quality" "rarity1"
 		}
 		"weapon_cutcontent"
 		{
@@ -8877,7 +8878,7 @@
 		"10587"
 		{
 			"name"	"Apoco-Fists"
-			"prefab"	"weapon_fists weapon_reskin"
+			"prefab"	"weapon_gloves weapon_reskin"
 			"year"			"2011"
 			"item_name"	"#TF_Apocofists"
 			"propername"	"1"

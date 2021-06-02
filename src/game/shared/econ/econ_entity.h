@@ -35,7 +35,7 @@ class CEconEntity : public CBaseAnimating, public IHasAttributes
 
 public:
 	CEconEntity();
-	virtual ~CEconEntity() {};
+	~CEconEntity();
 
 #ifdef CLIENT_DLL
 	virtual void OnPreDataChanged( DataUpdateType_t );

@@ -5644,6 +5644,13 @@ RenderGroup_t C_BaseEntity::GetRenderGroup()
 	if ( m_nRenderMode == kRenderNone )
 		return RENDER_GROUP_OPAQUE_ENTITY;
 
+	// When an entity has a material proxy, we have to recompute
+	// translucency here because the proxy may have changed it.
+	if (modelinfo->ModelHasMaterialProxy( GetModel() ))
+	{
+		modelinfo->RecomputeTranslucency( const_cast<model_t*>(GetModel()), GetSkin(), GetBody(), GetClientRenderable() );
+	}
+	
 	// NOTE: Bypassing the GetFXBlend protection logic because we want this to
 	// be able to be called from AddToLeafSystem.
 	int nTempComputeFrame = m_nFXComputeFrame;
