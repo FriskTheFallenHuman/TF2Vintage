@@ -67,6 +67,7 @@
 #include "tf_weapon_syringe.h"
 #include "tf_weapon_shovel.h"
 #include "tf_weapon_flaregun.h"
+#include "tf_obj_teleporter.h"
 
 #ifndef _X360
 #include "steam/isteamuserstats.h"
@@ -699,13 +700,35 @@ void CTFPlayer::TFPlayerThink()
 		
 		if ( !IsTaunting() )
 		{
-			// Drop the flag, and teleport us back to spawn.
+			// Drop the flag, and teleport us to where we want to go.
 			DropFlag();
 			m_bEurekaTeleport = false;
 			m_flEurekaTeleportTime = 0;
-			EmitSound( "Building_Teleporter.Send" );
-			TeleportEffect();		
-			TFGameRules()->GetPlayerSpawnSpot( this );
+			
+			bool bEurekaToTeleporter = GetEurekaToTeleporter();
+
+			// The player desires to go to their teleporter exit.
+			if (bEurekaToTeleporter)
+			{
+				// Check if we have a teleporter exit available to go to.
+				CObjectTeleporter *pTeleporter = dynamic_cast<CObjectTeleporter*>(GetObjectOfType(OBJ_TELEPORTER, TELEPORTER_TYPE_EXIT));
+				if ( pTeleporter && ( pTeleporter->GetState() != TELEPORTER_STATE_BUILDING ) )
+				{
+					// Our teleporter is valid, ship the player there.
+					pTeleporter->TeleporterReceive(this, 0.0);
+				}
+				else
+					bEurekaToTeleporter = false; // Our teleporter is either inactive or nonexistant, just go back to spawn.
+			}
+
+			// Backup to our spawn if our teleporter doesn't work or we just want to go back there.
+			if (!bEurekaToTeleporter)
+			{
+				// Give us a fake teleport effect to show we went back to spawn.
+				EmitSound("Building_Teleporter.Send");
+				TeleportEffect();
+				TFGameRules()->GetPlayerSpawnSpot(this);
+			}
 		}
 	}
 
@@ -792,7 +815,13 @@ void CTFPlayer::RegenThink( void )
 	{
 		nHealthChange = ceil( m_flAccumulatedHealthRegen );
 		if (nHealthChange <= -1)
-			TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
+		{
+			// TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
+			// STUPID HACK: Manually reassign the health down so we don't grunt on health drains, and make it never able to kill ourselves.
+			if ( GetHealth() > 1 )
+				SetHealth( Max( ( GetHealth() - nHealthChange ), 1 ) );
+		}
+		
 	}
 
 	if ( GetHealth() < GetMaxHealth() && nHealthChange != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )

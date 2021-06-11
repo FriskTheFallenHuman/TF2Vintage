@@ -736,6 +736,40 @@ static void MountAdditionalContent()
 			}
 		}
 	}
+	
+#ifdef TF_VINTAGE_CLIENT
+	// Servers should try pulling the TF2 install first, followed by checking the TF2 Dedicated server.
+	if (steamapicontext && steamapicontext->SteamApps())
+	{
+		char szPath[MAX_PATH * 2];
+		int ccFolder = steamapicontext->SteamApps()->GetAppInstallDir( 440, szPath, sizeof( szPath ) ); // TF2 ID
+		if (ccFolder > 0)
+		{
+			V_AppendSlash( szPath, sizeof( szPath ) );
+			//V_strncat( szPath, "tf", sizeof( szPath ) );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_textures.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_misc.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_misc.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_vo_english.vpk", szPath ), "GAME" );
+		}
+		else
+		{
+			ccFolder = NULL;
+			ccFolder = steamapicontext->SteamApps()->GetAppInstallDir( 232250, szPath, sizeof( szPath ) ); // TF2 Dedicated Server ID
+			if (ccFolder > 0)
+			{
+				V_AppendSlash( szPath, sizeof( szPath ) );
+				//V_strncat( szPath, "tf", sizeof( szPath ) );
+				g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_textures.vpk", szPath ), "GAME" );
+				g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_misc.vpk", szPath ), "GAME" );
+				g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_misc.vpk", szPath ), "GAME" );
+				g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_vo_english.vpk", szPath ), "GAME" );
+			}
+		}
+
+	}
+#endif
+
 #endif
 }
 
@@ -750,6 +784,18 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	// Connected in ConnectTier1Libraries
 	if ( cvar == NULL )
 		return false;
+
+#ifdef TF_VINTAGE
+	// ------------------------------
+	// Force CELT audio codec, instead of the one from Steam
+	// ------------------------------
+	ConVar *sv_voicecodec = NULL;
+	sv_voicecodec = g_pCVar->FindVar( "sv_voicecodec" );
+	if ( sv_voicecodec )
+	{
+		sv_voicecodec->SetValue( "vaudio_celt" );
+	}
+#endif
 
 #ifndef _X360
 	s_SteamAPIContext.Init();

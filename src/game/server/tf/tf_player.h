@@ -609,6 +609,10 @@ public:
 	void SetEurekaTeleportTime( void ) { m_flEurekaTeleportTime = gpGlobals->curtime + 2.0f; }
 	bool m_bEurekaTeleport;
 	float m_flEurekaTeleportTime;
+	bool m_bEurekaTeleportLocation;
+	void SetEurekaToTeleporter(bool bToTeleporter) { m_bEurekaTeleportLocation = bToTeleporter; }
+	bool GetEurekaToTeleporter(void) { return m_bEurekaTeleportLocation; }
+
 
 protected:
 

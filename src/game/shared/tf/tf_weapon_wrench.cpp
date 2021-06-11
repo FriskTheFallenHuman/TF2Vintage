@@ -134,16 +134,20 @@ bool CTFWrench::IsEurekaEffect( void )
 //-----------------------------------------------------------------------------
 void CTFWrench::ItemPostFrame( void )
 {
-#ifdef GAME_DLL
+
 	if (IsEurekaEffect())
 	{
 		// Eureka Effect checks if we pressed the reload key.
 		CTFPlayer *pOwner = ToTFPlayer( GetOwnerEntity() );
 		if ( pOwner->m_nButtons & IN_RELOAD )
-		EurekaTeleport();
-		
-	}
+		{
+			// If we had the Eureka HUD, this is where we would tell the client to pull up the HUD.
+			// Also a convar here to swapping between the new and old one. Old one will do, for now...
+#ifdef GAME_DLL
+		EurekaTeleport(false);
 #endif
+		}
+	}
 	BaseClass::ItemPostFrame();
 }
 
@@ -170,7 +174,7 @@ void CTFWrench::ApplyBuildingHealthUpgrade( void )
 //-----------------------------------------------------------------------------
 // Purpose: Sets up our teleporting.
 //-----------------------------------------------------------------------------
-void CTFWrench::EurekaTeleport( void )
+void CTFWrench::EurekaTeleport( bool bToTeleporter /* == false*/ )
 {
 	// Get our owner.
 	CTFPlayer *pOwner = ToTFPlayer( GetOwnerEntity() );
@@ -181,6 +185,7 @@ void CTFWrench::EurekaTeleport( void )
 	{
 		pOwner->StartEurekaTeleport();
 		pOwner->SetEurekaTeleportTime();
+		pOwner->SetEurekaToTeleporter(bToTeleporter);
 		pOwner->Taunt( TAUNT_EUREKA, MP_CONCEPT_TAUNT_EUREKA_EFFECT_TELEPORT );
 	}
 	

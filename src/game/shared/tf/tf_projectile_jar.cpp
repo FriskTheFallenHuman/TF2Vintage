@@ -252,6 +252,7 @@ void CTFProjectile_Jar::JarTouch( CBaseEntity *pOther )
 	if ( pOther->IsPlayer() )
 	{
 		m_hEnemy = pOther;
+		CreateStickyBoltEffect( pOther, &pTrace );
 		Explode( &pTrace, GetDamageType() );
 	}
 	// We should bounce off of certain surfaces (resupply cabinets, spawn doors, etc.)
@@ -300,6 +301,77 @@ void CTFProjectile_Jar::VPhysicsCollision( int index, gamevcollisionevent_t *pEv
 		SetNextThink( gpGlobals->curtime );
 	}
 
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFProjectile_Jar::CreateStickyBoltEffect( CBaseEntity *pOther, trace_t *pTrace )
+{
+	// If this is a friendly, don't make the effect at all.
+	CTFPlayer *pTarget = ToTFPlayer( pOther );
+	if ( !pTarget || pTarget->GetTeamNumber() == GetTeamNumber() )
+		return;
+			
+	// Only attach breadmonsters and cleavers.
+	if ( GetProjectileType() == TF_PROJECTILE_BREADMONSTER_JARATE || GetProjectileType() == TF_PROJECTILE_BREADMONSTER_MADMILK || GetProjectileType() == TF_PROJECTILE_CLEAVER )
+	{
+		// Find what hitbox our jar landed on.
+		mstudiobbox_t *pBox = NULL;
+		CBaseAnimating* pAnimating = NULL;
+		if ( pTrace->m_pEnt && pTrace->m_pEnt->GetTeamNumber() != GetTeamNumber() )
+		{
+			// A blob of if statements, just to make sure we set this right. 
+			CStudioHdr* pStudioHdr = NULL;
+			mstudiohitboxset_t* pSet = NULL;
+			pAnimating = dynamic_cast<CBaseAnimating*>(pOther);
+			if (pAnimating)
+				pStudioHdr = pAnimating->GetModelPtr();
+			if (pStudioHdr)
+				pSet = pStudioHdr->pHitboxSet(pAnimating->GetHitboxSet());
+			if (pSet)
+				pBox = pSet->pHitbox( pTrace->hitbox );
+		}
+		// We got ourselves the hitbox and the animation info, time to attach it.
+		// This is a heavily edited version of CTFProjectile_Arrow::GetBoneAttachmentInfo
+		if ( pBox && pAnimating )
+		{
+			Vector vecBoneOrigin;
+			QAngle vecBoneAngles;
+			int iBone, iPhysicsBone;
+			iBone = pBox->bone;
+			iPhysicsBone = pAnimating->GetPhysicsBone(iBone);
+			//pAnim->GetBonePosition( bone, vecOrigin, vecAngles );
+
+			matrix3x4_t arrowToWorld, boneToWorld, invBoneToWorld, boneToWorldTransform;
+			MatrixCopy(EntityToWorldTransform(), arrowToWorld);
+			pAnimating->GetBoneTransform(iBone, boneToWorld);
+
+			MatrixInvert(boneToWorld, invBoneToWorld);
+			ConcatTransforms(invBoneToWorld, arrowToWorld, boneToWorldTransform);
+			MatrixAngles(boneToWorldTransform, vecBoneAngles);
+			MatrixGetColumn(boneToWorldTransform, 3, vecBoneOrigin);
+		
+		
+			IGameEvent *event = gameeventmanager->CreateEvent( "arrow_impact" );
+
+			if ( event )
+			{
+				event->SetInt( "attachedEntity", pTarget->entindex() );
+				event->SetInt( "shooter", ToTFPlayer( GetThrower() )->entindex() );
+				event->SetInt( "projectileType", GetProjectileType() );
+				event->SetInt( "boneIndexAttached", iBone );
+				event->SetFloat( "bonePositionX", vecBoneOrigin.x );
+				event->SetFloat( "bonePositionY", vecBoneOrigin.y );
+				event->SetFloat( "bonePositionZ", vecBoneOrigin.z );
+				event->SetFloat( "boneAnglesX", vecBoneAngles.x );
+				event->SetFloat( "boneAnglesY", vecBoneAngles.y );
+				event->SetFloat( "boneAnglesZ", vecBoneAngles.z );
+				event->SetBool( "critical", m_bCritical );
+				gameeventmanager->FireEvent( event );
+			}
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

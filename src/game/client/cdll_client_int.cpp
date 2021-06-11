@@ -333,6 +333,10 @@ static ConVar s_cl_class("cl_class", "default", FCVAR_USERINFO|FCVAR_ARCHIVE, "D
 static ConVar s_cl_load_hl1_content("cl_load_hl1_content", "0", FCVAR_ARCHIVE, "Mount the content from Half-Life: Source if possible");
 #endif
 
+#ifdef TF_VINTAGE_CLIENT
+ConVar tf2v_mat_picmip( "tf2v_mat_picmip", "-10", FCVAR_ARCHIVE, "Overwrites the texture quality, from -10 to 10. Requires game restart when changed.");
+ConVar tf2v_use_alternate_mat_picmip( "tf2v_use_alternate_mat_picmip", "1", FCVAR_ARCHIVE, "Enables or disables the TF2V mat_picmips.", true, 0, true, 1);
+#endif
 
 // Physics system
 bool g_bLevelInitialized;
@@ -1169,6 +1173,35 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	InitFbx();
 #endif
 
+	// Force cl_cloud_settings to always be 0 so it doesn't use it to reset our spray
+	ConVar *cl_cloud_settings = nullptr;
+	cl_cloud_settings = g_pCVar->FindVar( "cl_cloud_settings" );
+	if (cl_cloud_settings)
+	{
+		cl_cloud_settings->SetValue( 0 );
+		cl_cloud_settings->SetMax( 0 );
+	}
+	
+#ifdef TF_VINTAGE_CLIENT
+	if (steamapicontext && steamapicontext->SteamApps())
+	{
+		char szPath[MAX_PATH * 2];
+		int ccFolder = steamapicontext->SteamApps()->GetAppInstallDir( 440, szPath, sizeof( szPath ) );
+		if (ccFolder > 0)
+		{
+			V_AppendSlash( szPath, sizeof( szPath ) );
+			//V_strncat( szPath, "tf", sizeof( szPath ) );
+			if (UTIL_IsLowViolence())
+				g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_lv.vpk", szPath ), "GAME_LV" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_textures.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_misc.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_misc.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_vo_english.vpk", szPath ), "GAME" );
+		}
+
+	}
+#endif
+
 	//if ( !CommandLine()->CheckParm( "-noscripting" ) )
 	if ( CommandLine()->CheckParm( "-vscript" ) )
 	{
@@ -1301,6 +1334,18 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	// Register user messages..
 	CUserMessageRegister::RegisterAll();
 
+#ifdef TF_VINTAGE_CLIENT
+	// ------------------------------
+	// Force CELT audio codec, instead of the one from Steam
+	// ------------------------------
+	ConVar *sv_voicecodec = NULL;
+	sv_voicecodec = g_pCVar->FindVar( "sv_voicecodec" );
+	if ( sv_voicecodec )
+	{
+		sv_voicecodec->SetValue( "vaudio_celt" );
+	}
+#endif
+
 	ClientVoiceMgr_Init();
 
 	// Embed voice status icons inside chat element
@@ -1408,6 +1453,37 @@ void CHLClient::PostInit()
 
 			g_pFullFileSystem->AddSearchPath( szPath, "HL1" );
 			g_pFullFileSystem->AddSearchPath( szPath, "GAME" );
+		}
+	}
+#endif
+
+#ifdef TF_VINTAGE_CLIENT
+	// HACK: mat_picmip clamps itself between -1 and 2, so this is a workaround
+	// to force our own mat_picmip on it before it has a chance to refresh it.
+	// This pretty much allows the old -10 textures back in.
+	if ( tf2v_use_alternate_mat_picmip.GetBool() ) 
+	{
+		ConVar *mat_picmip = NULL;
+		mat_picmip = g_pCVar->FindVar( "mat_picmip" );
+		ConVar *tf2v_mat_picmip = NULL;
+		tf2v_mat_picmip = g_pCVar->FindVar( "tf2v_mat_picmip" );
+		
+		if ( mat_picmip && tf2v_mat_picmip )
+		{
+			int iPicmip = tf2v_mat_picmip->GetInt();
+
+			if ( iPicmip < -10 )
+				iPicmip = -10;
+			else if ( iPicmip > 10 )
+				iPicmip = 10;
+
+			// hijack the convar's clamp values to use our own range
+			mat_picmip->SetMin( -10.0f );
+			mat_picmip->SetMax( 10.0f );
+			mat_picmip->SetValue( iPicmip );
+
+			// delete the convar
+			mat_picmip->Nuke();
 		}
 	}
 #endif

@@ -39,6 +39,8 @@ const char *g_pszArrowModels[] =
 	"models/weapons/w_models/w_arrow_xmas.mdl",
 	"models/weapons/c_models/c_crusaders_crossbow/c_crusaders_crossbow_xmas_proj.mdl",
 	"models/weapons/c_models/c_grapple_proj.mdl",
+	"models/weapons/w_models/w_breadmonster/w_breadmonster.mdl",
+	"models/workshop_partner/weapons/c_models/c_sd_cleaver/c_sd_cleaver.mdl", // TF_WEAPON_CLEAVER_MODEL
 };
 
 #define ARROW_FADE_TIME		3.f
