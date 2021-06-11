@@ -16,6 +16,7 @@
 #include "CvarToggleCheckButton.h"
 #include "tier1/KeyValues.h"
 #include "tier1/convar.h"
+#include <steam/steam_api.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -266,6 +267,13 @@ void COptionsSubVoice::OnCommand( const char *command)
             EndTestMicrophone();
         }
     }
+	else if (!stricmp(command, "SteamVoiceSettings"))
+	{
+		if ( steamapicontext && steamapicontext->SteamFriends() )
+		{
+			steamapicontext->SteamFriends()->ActivateGameOverlay( "voicesettings" );
+		}
+	}
     else
 	{
         BaseClass::OnCommand(command);

@@ -220,8 +220,6 @@ void CGameUI::Initialize( CreateInterfaceFn factory )
 //-----------------------------------------------------------------------------
 void CGameUI::PostInit()
 {
-	// to know once client dlls have been loaded
-	BaseModUI::CUIGameData::Get()->OnGameUIPostInit();
 }
 
 //-----------------------------------------------------------------------------
@@ -248,70 +246,6 @@ int __stdcall SendShutdownMsgFunc(WHANDLE hwnd, int lparam)
 {
 	Sys_PostMessage(hwnd, Sys_RegisterWindowMessage("ShutdownValvePlatform"), 0, 1);
 	return 1;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Searches for GameStartup*.mp3 files in the sound/ui folder and plays one
-//-----------------------------------------------------------------------------
-void CGameUI::PlayGameStartupSound()
-{
-	if ( CommandLine()->FindParm( "-nostartupsound" ) )
-		return;
-
-	FileFindHandle_t fh;
-
-	CUtlVector<char *> fileNames;
-
-	char path[ 512 ];
-	Q_snprintf( path, sizeof( path ), "sound/ui/gamestartup*.mp3" );
-	Q_FixSlashes( path );
-
-	char const *fn = g_pFullFileSystem->FindFirstEx( path, "MOD", &fh );
-	if ( fn )
-	{
-		do
-		{
-			char ext[ 10 ];
-			Q_ExtractFileExtension( fn, ext, sizeof( ext ) );
-
-			if ( !Q_stricmp( ext, "mp3" ) )
-			{
-				char temp[ 512 ];
-				Q_snprintf( temp, sizeof( temp ), "ui/%s", fn );
-
-				char *found = new char[ strlen( temp ) + 1 ];
-				Q_strncpy( found, temp, strlen( temp ) + 1 );
-
-				Q_FixSlashes( found );
-				fileNames.AddToTail( found );
-			}
-	
-			fn = g_pFullFileSystem->FindNext( fh );
-
-		} while ( fn );
-
-		g_pFullFileSystem->FindClose( fh );
-	}
-
-	// did we find any?
-	if ( fileNames.Count() > 0 )
-	{
-		SYSTEMTIME SystemTime;
-		GetSystemTime( &SystemTime );
-		int index = SystemTime.wMilliseconds % fileNames.Count();
-
-		if ( fileNames.IsValidIndex( index ) && fileNames[index] )
-		{
-			char found[ 512 ];
-
-			// escape chars "*#" make it stream, and be affected by snd_musicvolume
-			Q_snprintf( found, sizeof( found ), "play *#%s", fileNames[index] );
-
-			engine->ClientCmd_Unrestricted( found );
-		}
-
-		fileNames.PurgeAndDeleteElements();
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -769,22 +703,6 @@ bool CGameUI::HasSavedThisMenuSession()
 void CGameUI::SetSavedThisMenuSession( bool bState )
 {
 	m_bHasSavedThisMenuSession = bState;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CGameUI::NeedConnectionProblemWaitScreen()
-{
-	BaseModUI::CUIGameData::Get()->NeedConnectionProblemWaitScreen();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CGameUI::ShowPasswordUI( char const *pchCurrentPW )
-{
-	BaseModUI::CUIGameData::Get()->ShowPasswordUI( pchCurrentPW );
 }
 
 //-----------------------------------------------------------------------------

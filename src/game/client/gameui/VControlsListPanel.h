@@ -35,6 +35,12 @@ public:
 	virtual void	OnMousePressed(vgui::MouseCode code);
 	virtual void	OnMouseDoublePressed(vgui::MouseCode code);
 
+#ifdef TF_VINTAGE_CLIENT
+	virtual void ApplySettings( KeyValues *inResourceData );
+	virtual vgui::HFont GetFont(){ return m_hFont; };
+	virtual const char* GetFontString(){ return m_szFont; };
+#endif
+
 private:
 	void ApplySchemeSettings(vgui::IScheme *pScheme );
 
@@ -44,6 +50,9 @@ private:
 	int				m_nClickRow;
 	// Font to use for showing the prompt
 	vgui::HFont		m_hFont;
+#ifdef TF_VINTAGE_CLIENT
+	char				m_szFont[64];
+#endif
 	// panel used to edit
 	class CInlineEditPanel *m_pInlineEditPanel;
 	int m_iMouseX, m_iMouseY;

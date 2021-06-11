@@ -11,7 +11,6 @@
 #include "EngineInterface.h"
 
 #include "vgenericconfirmation.h"
-#include "vflyoutmenu.h"
 #include "IGameUIFuncs.h"
 
 // vgui controls
@@ -50,7 +49,7 @@ CUtlVector< IBaseModFrameListener * > CBaseModFrame::m_FrameListeners;
 
 bool CBaseModFrame::m_DrawTitleSafeBorder = false;
 
-ConVar ui_gameui_modal( "ui_gameui_modal", "1", FCVAR_NONE, "If set, the game UI pages will take modal input focus." );
+ConVar ui_gameui_modal( "ui_gameui_modal", "0", FCVAR_NONE, "If set, the game UI pages will take modal input focus." );
 
 //=============================================================================
 CBaseModFrame::CBaseModFrame( vgui::Panel *parent, const char *panelName, bool okButtonEnabled, 
@@ -201,26 +200,7 @@ void CBaseModFrame::OnKeyCodePressed(KeyCode keycode)
 			NavigateBack();
 		}
 		break;
-	case KEY_XBUTTON_STICK1:
-#ifdef BASEMOD360UI_DEBUG
-		ToggleTitleSafeBorder();
-#endif
-		break;
-	case KEY_XBUTTON_STICK2:
-#ifdef BASEMOD360UI_DEBUG
-		{
-			//DEBUG: Remove this later
-			CBaseModFooterPanel *footer = CBaseModPanel::GetSingleton().GetFooterPanel();
-			if( footer )
-			{
-				footer->LoadLayout();
-			}
 
-			LoadLayout();
-			//ENDDEBUG
-			break;
-		}
-#endif
 	default:
 		BaseClass::OnKeyCodePressed(keycode);
 		break;
@@ -251,15 +231,7 @@ void CBaseModFrame::OnKeyCodeTyped( vgui::KeyCode code )
 		break;
 
 	case KEY_ESCAPE:
-		// close active menu if there is one, else navigate back
-		if ( FlyoutMenu::GetActiveMenu() )
-		{
-			FlyoutMenu::CloseActiveMenu( FlyoutMenu::GetActiveMenu()->GetNavFrom() );
-		}
-		else
-		{
-			OnKeyCodePressed( ButtonCodeToJoystickButtonCode( KEY_XBUTTON_B, CBaseModPanel::GetSingleton().GetLastActiveUserId() ) );
-		}
+		OnKeyCodePressed( ButtonCodeToJoystickButtonCode( KEY_XBUTTON_B, CBaseModPanel::GetSingleton().GetLastActiveUserId() ) );
 		break;
 	}
 
@@ -267,10 +239,6 @@ void CBaseModFrame::OnKeyCodeTyped( vgui::KeyCode code )
 
 void CBaseModFrame::OnMousePressed( vgui::MouseCode code )
 {
-	if( FlyoutMenu::GetActiveMenu() )
-	{
-		FlyoutMenu::CloseActiveMenu( FlyoutMenu::GetActiveMenu()->GetNavFrom() );
-	}
 	BaseClass::OnMousePressed( code );
 }
 
@@ -280,13 +248,8 @@ void CBaseModFrame::OnOpen()
 	SetAlpha(255);//make sure we show up.
 	Activate();
 
-	// close active menu if there is one
-	FlyoutMenu::CloseActiveMenu();
-
 	if ( ui_gameui_modal.GetBool() )
-	{
 		PushModalInputFocus();
-	}
 }
 
 //======================================================================\=======

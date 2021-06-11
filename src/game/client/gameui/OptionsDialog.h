@@ -11,6 +11,7 @@
 #pragma once
 #endif
 
+#include "vgui_controls/Button.h"
 #include "vgui_controls/PropertyDialog.h"
 
 //-----------------------------------------------------------------------------
@@ -25,11 +26,19 @@ public:
 	~COptionsDialog();
 
 	void Run();
+	void SetupTabs();
 	virtual void Activate();
+	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
 
 	MESSAGE_FUNC( OnGameUIHidden, "GameUIHidden" );	// called when the GameUI is hidden
 
+protected:
+
+	// vgui overrides
+	virtual void PerformLayout() OVERRIDE;
+
 private:
+
 	class COptionsSubAudio *m_pOptionsSubAudio;
 	class COptionsSubVideo *m_pOptionsSubVideo;
 };

@@ -20,6 +20,7 @@
 #include <vgui/IInput.h>
 #include "FileSystem.h"
 #include "time.h"
+#include "tf_tips.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -45,7 +46,7 @@ LoadingProgress::LoadingProgress(Panel *parent, const char *panelName, LoadingWi
 	m_pLoadingSpinner = NULL;
 	m_LoadingType = LT_UNDEFINED;
 
-	m_pBGImage = NULL;
+	m_pMainBackground = NULL;
 	m_pFooter = NULL;
 
     // Listen for game events
@@ -118,8 +119,9 @@ void LoadingProgress::ApplySchemeSettings( IScheme *pScheme )
 	m_pLoadingBar = dynamic_cast< vgui::ProgressBar* >( FindChildByName( "LoadingBar" ) );
 	if ( m_pLoadingBar )
 	{
-		m_pLoadingBar->SetBgColor( pScheme->GetColor( "IfmMenuDark", Color( 0, 0, 0, 0 ) ) );
+		m_pLoadingBar->SetBgColor( pScheme->GetColor( "HudOffWhite", Color( 200, 187, 161, 255 ) ) );
 		m_pLoadingBar->SetPaintBorderEnabled( false );
+		m_pLoadingBar->SetSegmentInfo( 4, 10 );
 	}
 
 	SetupControlStates();
@@ -128,8 +130,8 @@ void LoadingProgress::ApplySchemeSettings( IScheme *pScheme )
 //=============================================================================
 void LoadingProgress::Close()
 {
-	if ( m_pBGImage )
-		m_pBGImage->EvictImage();
+	if ( m_pMainBackground )
+		m_pMainBackground->EvictImage();
 
 	BaseClass::Close();
 }
@@ -187,12 +189,12 @@ void LoadingProgress::PaintBackground()
 	int screenWide, screenTall;
 	surface()->GetScreenSize( screenWide, screenTall );
 
-	if ( m_bDrawBackground && m_pBGImage )
+	if ( m_bDrawBackground && m_pMainBackground )
 	{
 		int x, y, wide, tall;
-		m_pBGImage->GetBounds( x, y, wide, tall );
+		m_pMainBackground->GetBounds( x, y, wide, tall );
 		surface()->DrawSetColor( Color( 255, 255, 255, 255 ) );
-		surface()->DrawSetTexture( m_pBGImage->GetImage()->GetID() );
+		surface()->DrawSetTexture( m_pMainBackground->GetImage()->GetID() );
 		surface()->DrawTexturedRect( x, y, x+wide, y+tall );
 	}
 
@@ -278,52 +280,43 @@ void LoadingProgress::SetupControlStates()
 	case LT_MAINMENU:
 		m_bDrawBackground = true;
 		m_bDrawProgress = true;
-		m_bDrawSpinner = false;
+		m_bDrawSpinner = true;
 		break;
 	case LT_TRANSITION:
 		m_bDrawBackground = true;
 		m_bDrawProgress = true;
-		m_bDrawSpinner = false;
+		m_bDrawSpinner = true;
 		break;
 	default:
 		break;
 	}
 
 	m_pLoadingProgress = dynamic_cast< vgui::Label* >( FindChildByName( "LoadingProgressText" ) );
-#ifdef TF_VINTAGE_CLIENT
-	m_pCancelButton = dynamic_cast< CExMenuButton* >( FindChildByName( "Cancel" ) );
-#else
-	m_pCancelButton = dynamic_cast< vgui::Button* >( FindChildByName( "Cancel" ) );
-#endif
+	m_pCancelButton = dynamic_cast< CTFMenuButton* >( FindChildByName( "Cancel" ) );
 	m_pFooter = dynamic_cast< vgui::Panel* >( FindChildByName( "Footer" ) );
 
-	m_pBGImage = dynamic_cast< vgui::ImagePanel* >( FindChildByName( "Background" ) );
-	if ( m_pBGImage )
+	m_pMainBackground = dynamic_cast< vgui::ImagePanel* >( FindChildByName( "MainBackground" ) );
+	if ( m_pMainBackground )
 	{
 		// set the correct background image
 		int screenWide, screenTall;
 		surface()->GetScreenSize( screenWide, screenTall );
-
-		char szBGName[MAX_PATH];
-		engine->GetMainMenuBackgroundName( szBGName, sizeof( szBGName ) );
 		char szImage[MAX_PATH];
-		Q_snprintf( szImage, sizeof( szImage ), "../console/%s", szBGName );
+		Q_snprintf( szImage, sizeof( szImage ), "../console/background01" );
 
 		float aspectRatio = (float)screenWide/(float)screenTall;
 		bool bIsWidescreen = aspectRatio >= 1.5999f;
 		if ( bIsWidescreen )
 			Q_strcat( szImage, "_widescreen", sizeof( szImage ) );
 
-		m_pBGImage->SetImage( szImage );
+		m_pMainBackground->SetImage( szImage );
 
 		// we will custom draw
-		m_pBGImage->SetVisible( false );
+		m_pMainBackground->SetVisible( false );
 	}
 
 	// we will custom draw
 	m_pLoadingBar = dynamic_cast< vgui::ProgressBar* >( FindChildByName( "LoadingBar" ) );
-	if ( m_pLoadingBar )
-		m_pLoadingBar->SetScheme( "SourceScheme" );
 
 	// we will custom draw
 	m_pLoadingSpinner = dynamic_cast< vgui::ImagePanel* >( FindChildByName( "LoadingSpinner" ) );
@@ -344,4 +337,43 @@ void LoadingProgress::SetStatusText( const char *statusText )
 {
 	if ( m_pLoadingProgress )
 		m_pLoadingProgress->SetText( statusText );
+}
+
+//=============================================================================
+CLoadingTipPanel::CLoadingTipPanel( Panel *pParent ) : EditablePanel( pParent, "LoadingTipPanel" )
+{
+	SetupTips();
+}
+
+//=============================================================================
+void CLoadingTipPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	ReloadScheme();
+}
+
+//=============================================================================
+void CLoadingTipPanel::ReloadScheme( void )
+{
+	NextTip();
+}
+
+//=============================================================================
+void CLoadingTipPanel::SetupTips( void )
+{
+	NextTip();
+}
+
+//=============================================================================
+void CLoadingTipPanel::NextTip( void )
+{
+	if ( !IsEnabled() )
+		return;
+
+	int iClass = TF_CLASS_UNDEFINED;
+	SetDialogVariable( "TipText", g_TFTips.GetRandomTip( iClass ) );
+
+	// Set our control visible
+	SetVisible( true );
 }

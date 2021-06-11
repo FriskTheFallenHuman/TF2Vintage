@@ -344,18 +344,6 @@ void AdvancedCrosshairImagePanel::Paint()
 //-----------------------------------------------------------------------------
 COptionsSubMultiplayer::COptionsSubMultiplayer(vgui::Panel *parent) : vgui::PropertyPage(parent, "OptionsSubMultiplayer") 
 {
-	Button *cancel = new Button( this, "Cancel", "#GameUI_Cancel" );
-	cancel->SetCommand( "Close" );
-
-	Button *ok = new Button( this, "OK", "#GameUI_OK" );
-	ok->SetCommand( "Ok" );
-
-	Button *apply = new Button( this, "Apply", "#GameUI_Apply" );
-	apply->SetCommand( "Apply" );
-
-	Button *advanced = new Button( this, "Advanced", "#GameUI_AdvancedEllipsis" );
-	advanced->SetCommand( "Advanced" );
-
 	Button *importSprayImage = new Button( this, "ImportSprayImage", "#GameUI_ImportSprayEllipsis" );
 	importSprayImage->SetCommand("ImportSprayImage");
 
@@ -367,10 +355,6 @@ COptionsSubMultiplayer::COptionsSubMultiplayer(vgui::Panel *parent) : vgui::Prop
 
 	m_pLogoImage = new ImagePanel( this, "LogoImage" );
 	m_pLogoImage->AddActionSignalTarget( this );
-	
-	m_nLogoR = 255;
-	m_nLogoG = 255;
-	m_nLogoB = 255;
 
 	// crosshair controls
 	m_pCrosshairColorComboBox = new ComboBox(this, "CrosshairColorComboBox", 6, false);
@@ -468,19 +452,13 @@ COptionsSubMultiplayer::~COptionsSubMultiplayer()
 //-----------------------------------------------------------------------------
 void COptionsSubMultiplayer::OnCommand( const char *command )
 {
-	if ( !stricmp( command, "Advanced" ) )
-	{
-		if (!m_hMultiplayerAdvancedDialog.Get())
-			m_hMultiplayerAdvancedDialog = new CMultiplayerAdvancedDialog( this );
-
-		m_hMultiplayerAdvancedDialog->Activate();
-	}
-	else if (!stricmp( command, "ImportSprayImage" ) )
+	if (!stricmp( command, "ImportSprayImage" ) )
 	{
 		if (m_hImportSprayDialog == NULL)
 		{
 			m_hImportSprayDialog = new FileOpenDialog(NULL, "#GameUI_ImportSprayImage", true);
-			m_hImportSprayDialog->AddFilter("*.tga,*.jpg,*.bmp,*.vtf", "#GameUI_All_Images", true);
+			//m_hImportSprayDialog->AddFilter("*.tga,*.jpg,*.bmp,*.vtf", "#GameUI_All_Images", true);
+			m_hImportSprayDialog->AddFilter("*.tga,*.bmp,*.vtf", "#GameUI_All_Images", true);
 			m_hImportSprayDialog->AddFilter("*.tga", "#GameUI_TGA_Images", false);
 			m_hImportSprayDialog->AddFilter("*.bmp", "#GameUI_BMP_Images", false);
 			m_hImportSprayDialog->AddFilter("*.vtf", "#GameUI_VTF_Images", false);

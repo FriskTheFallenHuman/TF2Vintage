@@ -27,6 +27,7 @@
 
 #include <vgui_controls/Panel.h>
 #include <vgui_controls/BuildGroup.h>
+#include <vgui_controls/BuildModeDialog.h>
 #include <vgui_controls/Tooltip.h>
 #include <vgui_controls/PHandle.h>
 #include <vgui_controls/Controls.h>
@@ -159,6 +160,7 @@ class CDragDropHelperPanel : public Panel
 	DECLARE_CLASS_SIMPLE( CDragDropHelperPanel, Panel );
 public:
 	CDragDropHelperPanel();
+	virtual ~CDragDropHelperPanel() {}
 
 	virtual VPANEL IsWithinTraverse(int x, int y, bool traversePopups);
 	virtual void PostChildPaint();
@@ -701,13 +703,10 @@ void Panel::Init( int x, int y, int wide, int tall )
 	_pinCorner = PIN_TOPLEFT;
 	_cursor = dc_arrow;
 	_border = NULL;
-	_buildGroup = UTLHANDLE_INVALID;
 	_tabPosition = 0;
 	m_iScheme = 0;
 	m_bIsSilent = false;
 	m_bParentNeedsCursorMoveEvents = false;
-
-	_buildModeFlags = 0; // not editable or deletable in buildmode dialog by default
 
 	m_pTooltips = NULL;
 	m_bToolTipOverridden = false;
@@ -762,6 +761,14 @@ void Panel::Init( int x, int y, int wide, int tall )
 	m_LastNavDirection = ND_NONE;
 	m_bWorldPositionCurrentFrame = false;
 	m_bForceStereoRenderToFrameBuffer = false;
+
+	_buildModeFlags = 0; // not editable or deletable in buildmode dialog by default
+	_buildGroupHandle = UTLHANDLE_INVALID;
+
+	_buildGroup = new BuildGroup(this, this);
+
+	// add ourselves to the build group
+	SetBuildGroup(GetBuildGroup());
 }
 
 //-----------------------------------------------------------------------------
@@ -769,6 +776,8 @@ void Panel::Init( int x, int y, int wide, int tall )
 //-----------------------------------------------------------------------------
 Panel::~Panel()
 {
+	delete _buildGroup;
+
 	// @note Tom Bui: only cleanup if we've created it
 	if ( !m_bToolTipOverridden )
 	{
@@ -827,7 +836,7 @@ Panel::~Panel()
 	delete m_pDragDrop;
 #endif // VGUI_USEDRAGDROP
 
-#if defined( VGUI_PANEL_VERIFY_DELETES )
+#if defined( _DEBUG )
 	// Zero out our vtbl pointer. This should hopefully help us catch bad guys using
 	//  this panel after it has been deleted.
 	uintp *panel_vtbl = (uintp *)this;
@@ -912,10 +921,7 @@ const char *Panel::GetClassName()
 //-----------------------------------------------------------------------------
 void Panel::SetPos(int x, int y)
 {
-	if ( !HushAsserts() )
-	{
-		Assert( abs(x) < 32768 && abs(y) < 32768 );
-	}
+	Assert( abs(x) < 32768 && abs(y) < 32768 );
 	ipanel()->SetPos(GetVPanel(), x, y);
 }
 
@@ -1271,11 +1277,11 @@ void Panel::PaintTraverse( bool repaint, bool allowForce )
 		if ( GetBuildModeDialogCount() && IsBuildGroupEnabled() ) //&& HasFocus() )
 		{
 			// outline all selected panels 
-			CUtlVector<PHandle> *controlGroup = _buildGroup->GetControlGroup();
+			CUtlVector<PHandle> *controlGroup = _buildGroupHandle->GetControlGroup();
 			for (int i=0; i < controlGroup->Size(); ++i)
 			{
 				// outline all selected panels 
-				CUtlVector<PHandle> *controlGroup = _buildGroup->GetControlGroup();
+				CUtlVector<PHandle> *controlGroup = _buildGroupHandle->GetControlGroup();
 				for (int i=0; i < controlGroup->Size(); ++i)
 				{
 					surface()->PushMakeCurrent( ((*controlGroup)[i].Get())->GetVPanel(), false );
@@ -1283,7 +1289,7 @@ void Panel::PaintTraverse( bool repaint, bool allowForce )
 					surface()->PopMakeCurrent( ((*controlGroup)[i].Get())->GetVPanel() );
 				}	
 			
-				_buildGroup->DrawRulers();						
+				_buildGroupHandle->DrawRulers();						
 			}
 		}
 #endif
@@ -1497,6 +1503,13 @@ void Panel::SetParent(VPANEL newParent)
 void Panel::OnChildAdded(VPANEL child)
 {
 	Assert( !_flags.IsFlagSet( IN_PERFORM_LAYOUT ) );
+
+	// add only if we're in the same module
+	Panel *panel = ipanel()->GetPanel(child, GetModuleName());
+	if(panel)
+	{
+		panel->SetBuildGroup(_buildGroup);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1773,7 +1786,7 @@ void Panel::InternalCursorMoved(int x, int y)
 
 	if (IsBuildGroupEnabled())
 	{
-		if ( _buildGroup->CursorMoved(x, y, this) )
+		if ( _buildGroupHandle->CursorMoved(x, y, this) )
 		{
 			return;
 		}
@@ -1928,7 +1941,7 @@ void Panel::InternalMousePressed(int code)
 	
 	if (IsBuildGroupEnabled())
 	{
-		if ( _buildGroup->MousePressed((MouseCode)code, this) )
+		if ( _buildGroupHandle->MousePressed((MouseCode)code, this) )
 		{
 			return;
 		}
@@ -1986,7 +1999,7 @@ void Panel::InternalMouseDoublePressed(int code)
 	
 	if (IsBuildGroupEnabled())
 	{
-		if ( _buildGroup->MouseDoublePressed((MouseCode)code, this) )
+		if ( _buildGroupHandle->MouseDoublePressed((MouseCode)code, this) )
 		{
 			return;
 		}
@@ -2082,7 +2095,7 @@ void Panel::InternalMouseReleased(int code)
 	
 	if (IsBuildGroupEnabled())
 	{
-		if ( _buildGroup->MouseReleased((MouseCode)code, this) )
+		if ( _buildGroupHandle->MouseReleased((MouseCode)code, this) )
 		{
 			return;
 		}
@@ -2798,7 +2811,7 @@ void Panel::InternalKeyCodeTyped( int code )
 		// Things in build mode don't have accelerators
 		if (IsBuildGroupEnabled())
 		{
-			 _buildGroup->KeyCodeTyped((KeyCode)code, this);
+			 _buildGroupHandle->KeyCodeTyped((KeyCode)code, this);
 			return;
 		}
 
@@ -2831,7 +2844,7 @@ void Panel::InternalKeyTyped(int unichar)
 	{
 		if ( IsBuildGroupEnabled() )
 		{
-			if ( _buildGroup->KeyTyped( (wchar_t)unichar, this ) )
+			if ( _buildGroupHandle->KeyTyped( (wchar_t)unichar, this ) )
 			{
 				return;
 			}
@@ -2854,7 +2867,7 @@ void Panel::InternalKeyCodeReleased(int code)
 	{
 		if (IsBuildGroupEnabled())
 		{
-			if ( _buildGroup->KeyCodeReleased((KeyCode)code, this) )
+			if ( _buildGroupHandle->KeyCodeReleased((KeyCode)code, this) )
 			{
 				return;
 			}
@@ -2881,7 +2894,7 @@ void Panel::InternalMouseFocusTicked()
 	if (IsBuildGroupEnabled())
 	{
 		// must repaint so the numbers will be accurate
-		if (_buildGroup->HasRulersOn())
+		if (_buildGroupHandle->HasRulersOn())
 		{
 			PaintTraverse(true);
 		}
@@ -2921,7 +2934,7 @@ void Panel::InternalSetCursor()
 			
 			if (IsBuildGroupEnabled())
 			{
-				cursor = _buildGroup->GetCursor(this);
+				cursor = _buildGroupHandle->GetCursor(this);
 			}
 			
 			if (input()->GetCursorOveride())
@@ -3136,6 +3149,16 @@ void Panel::OnKeyCodePressed(KeyCode code)
 void Panel::OnKeyCodeTyped(KeyCode keycode)
 {
 	vgui::KeyCode code = GetBaseButtonCode( keycode );
+
+	bool shift = (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT));
+	bool ctrl = (input()->IsKeyDown(KEY_LCONTROL) || input()->IsKeyDown(KEY_RCONTROL));
+	bool alt = (input()->IsKeyDown(KEY_LALT) || input()->IsKeyDown(KEY_RALT));
+
+	if(ctrl && shift && alt && code == KEY_B)
+	{
+		// enable build mode
+		ActivateBuildMode();
+	}
 
 	// handle focus change
 	if ( IsX360() || IsConsoleStylePanel() )
@@ -3465,7 +3488,7 @@ void Panel::SetBuildModeDeletable(bool state)
 //-----------------------------------------------------------------------------
 bool Panel::IsBuildModeActive()
 {
-	return _buildGroup ? _buildGroup->IsEnabled() : false;
+	return _buildGroupHandle ? _buildGroupHandle->IsEnabled() : false;
 }
 
 //-----------------------------------------------------------------------------
@@ -3537,19 +3560,15 @@ bool Panel::RequestFocusNext(VPANEL panel)
 void Panel::RequestFocus(int direction)
 {
 	// NOTE: This doesn't make any sense if we don't have keyboard input enabled
-	//Assert( ( IsX360() || IsConsoleStylePanel() ) || IsKeyBoardInputEnabled() );
-	if (IsX360())
-	{
-		Assert(IsX360());
-	}
-	if (IsConsoleStylePanel())
-	{
-		Assert(IsConsoleStylePanel());
-	}
-	if (!IsKeyBoardInputEnabled())
-	{
-		Assert(!IsKeyBoardInputEnabled());
-	}
+	if ( IsX360() )
+		Assert( IsX360() );
+
+	if ( IsConsoleStylePanel() )
+		Assert( IsConsoleStylePanel() );
+
+	if ( !IsKeyBoardInputEnabled() )
+		Assert( !IsKeyBoardInputEnabled() );
+
 	//	ivgui()->DPrintf2("RequestFocus(%s, %s)\n", GetName(), GetClassName());
 	OnRequestFocus(GetVPanel(), NULL);
 }
@@ -3787,17 +3806,35 @@ void Panel::SetBuildGroup(BuildGroup* buildGroup)
 
 	Assert(buildGroup != NULL);
 	
-	_buildGroup = buildGroup;
+	_buildGroupHandle = buildGroup;
 
-	_buildGroup->PanelAdded(this);
+	_buildGroupHandle->PanelAdded(this);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Activates the build mode dialog for editing panels.
+//-----------------------------------------------------------------------------
+void Panel::ActivateBuildMode()
+{
+	_buildGroup->SetEnabled(true);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Return the buildgroup that this panel is part of.
+// Input  : 
+// Output : BuildGroup
+//-----------------------------------------------------------------------------
+BuildGroup *Panel::GetBuildGroup()
+{
+	return _buildGroup;
 }
 
 bool Panel::IsBuildGroupEnabled()
 {
-	if ( !_buildGroup.IsValid() )
+	if ( !_buildGroupHandle.IsValid() )
 		return false;
 
-	bool enabled = _buildGroup->IsEnabled();
+	bool enabled = _buildGroupHandle->IsEnabled();
 	if ( enabled )
 		return enabled;
 
@@ -4109,7 +4146,7 @@ void Panel::ApplySchemeSettings(IScheme *pScheme)
 
 	if ( IsBuildGroupEnabled() )
 	{
-		_buildGroup->ApplySchemeSettings(pScheme);
+		_buildGroupHandle->ApplySchemeSettings(pScheme);
 		return;
 	}
 }
@@ -5601,6 +5638,14 @@ void Panel::PostMessageToChild(const char *childName, KeyValues *message)
 //-----------------------------------------------------------------------------
 bool Panel::RequestInfo( KeyValues *outputData )
 {
+	if (!stricmp(outputData->GetName(), "BuildDialog"))
+	{
+		// a build dialog is being requested, give it one
+		// a bit hacky, but this is a case where vgui.dll needs to reach out
+		outputData->SetPtr("PanelPtr", new BuildModeDialog( (BuildGroup *)outputData->GetPtr("BuildGroupPtr")));
+		return true;
+	}
+
 	if ( InternalRequestInfo( GetAnimMap(), outputData ) )
 	{
 		return true;

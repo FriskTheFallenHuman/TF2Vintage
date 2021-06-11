@@ -131,7 +131,7 @@ class CGammaDialog : public vgui::Frame
 {
 	DECLARE_CLASS_SIMPLE( CGammaDialog, vgui::Frame );
 public:
-	CGammaDialog( vgui::VPANEL hParent ) : BaseClass( NULL, "OptionsSubVideoGammaDlg" )
+	CGammaDialog( vgui::VPANEL hParent ) : BaseClass( NULL, NULL )
 	{
 		// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
 		SetTitle("#GameUI_AdjustGamma_Title", true);
@@ -144,6 +144,9 @@ public:
 
 		Button *ok = new Button( this, "OKButton", "#vgui_ok" );
 		ok->SetCommand( new KeyValues("OK") );
+
+		Button *cancel = new Button( this, "CancelButton", "#vgui_Cancel" );
+		cancel->SetCommand( new KeyValues("Close") );
 
 		LoadControlSettings( "resource/OptionsSubVideoGammaDlg.res" );
 		MoveToCenterOfScreen();
@@ -248,6 +251,8 @@ public:
 	COptionsSubVideoAdvancedDlg( vgui::Panel *parent ) : BaseClass( parent , "OptionsSubVideoAdvancedDlg" )
 	{
 		SetTitle("#GameUI_VideoAdvanced_Title", true);
+		SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/SourceScheme.res", "SourceScheme" ) );
+		SetTitle("", false);
 		SetSize( 260, 400 );
 
 		m_pDXLevel = new ComboBox(this, "dxlabel", 6, false );
@@ -1351,11 +1356,11 @@ void COptionsSubVideo::OpenThirdPartyVideoCreditsDialog()
    m_OptionsSubVideoThirdPartyCreditsDlg->Activate();
 }
 
-COptionsSubVideoThirdPartyCreditsDlg::COptionsSubVideoThirdPartyCreditsDlg( vgui::VPANEL hParent ) : BaseClass( NULL, NULL )
+COptionsSubVideoThirdPartyCreditsDlg::COptionsSubVideoThirdPartyCreditsDlg( vgui::VPANEL hParent ) : BaseClass( NULL, "OptionsSubVideoThirdPartyDlg" )
 {
 	// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
 
-    SetTitle("#GameUI_ThirdPartyVideo_Title", true);
+    SetTitle("", false);
     SetSize( 500, 200 );
     LoadControlSettings("Resource/OptionsSubVideoThirdPartyDLG.res");
     MoveToCenterOfScreen();

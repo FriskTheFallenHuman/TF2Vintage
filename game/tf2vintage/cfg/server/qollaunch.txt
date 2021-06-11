@@ -99,4 +99,4 @@ tf2v_use_new_flare 0
 tf2v_use_new_demo_explosion_variance 0
 tf2v_new_sentry_wrangle_location 0
 tf2v_new_sentry_damage_falloff 0
-tf2v_legacy_weapons 1
+tf2v_use_faster_reload 0

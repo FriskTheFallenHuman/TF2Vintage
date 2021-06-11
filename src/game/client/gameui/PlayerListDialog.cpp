@@ -28,22 +28,26 @@ using namespace vgui;
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CPlayerListDialog::CPlayerListDialog(vgui::Panel *parent) : BaseClass(parent, "PlayerListDialog")
+CPlayerListDialog::CPlayerListDialog(vgui::Panel *parent) : BaseClass( parent, "MutePlayerDialog" )
 {
-	SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/SourceScheme.res", "SourceScheme" ) );
+	SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" ) );
 
-	SetSize(320, 240);
-	SetTitle("#GameUI_CurrentPlayers", true);
+	SetProportional( true );
+	SetKeyBoardInputEnabled( true );
+	SetMouseInputEnabled( true );
+	SetOKButtonVisible( false );
+	SetCancelButtonVisible( false );
+	SetApplyButtonVisible( false );
 
-	m_pMuteButton = new Button(this, "MuteButton", "");
+	m_pMuteButton = new Button( this, "MuteButton", "" );
 
-	m_pPlayerList = new ListPanel(this, "PlayerList");
-	m_pPlayerList->AddColumnHeader(0, "Name", "#GameUI_PlayerName", 180);
-	m_pPlayerList->AddColumnHeader(1, "Properties", "#GameUI_Properties", 80);
+	m_pPlayerList = new ListPanel( this, "PlayerList" );
+	m_pPlayerList->AddColumnHeader( 0, "Name", "#GameUI_PlayerName", 180 );
+	m_pPlayerList->AddColumnHeader( 1, "Properties", "#GameUI_Properties", 80 );
 
 	m_pPlayerList->SetEmptyListText("#GameUI_NoOtherPlayersInGame");
 
-	LoadControlSettings("Resource/PlayerListDialog.res");
+	LoadControlSettings( "Resource/MutePlayerDialog.res" );
 }
 
 //-----------------------------------------------------------------------------

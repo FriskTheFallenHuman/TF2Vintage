@@ -52,6 +52,9 @@
 #include "utlvector.h"
 #include "props_shared.h"
 #include "weapon_selection.h"
+#ifdef GAMEUI_EMBEDDED
+#include "nb_header_footer.h"
+#endif // GAMEUI_EMBEDDED
 
 #if defined( _X360 )
 #include "tf_clientscoreboard.h"
@@ -389,6 +392,11 @@ void ClientModeTFNormal::Init()
 //-----------------------------------------------------------------------------
 void ClientModeTFNormal::Shutdown()
 {
+#ifdef GAMEUI_EMBEDDED
+	if ( BackgroundMovie() )
+		BackgroundMovie()->ClearCurrentMovie();
+#endif // GAMEUI_EMBEDDED
+
 	DestroyStatsSummaryPanel();
 }
 

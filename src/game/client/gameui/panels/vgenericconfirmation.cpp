@@ -8,11 +8,7 @@
 #include "VGenericConfirmation.h"
 #include "vgui_controls/Label.h"
 #include "vgui/ISurface.h"
-#ifdef TF_VINTAGE_CLIENT
 #include "tf_controls.h"
-#else
-#include "vgui_controls/Button.h"
-#endif
 #include "cdll_util.h"
 #include <vgui_controls/AnimationController.h>
 
@@ -49,22 +45,15 @@ GenericConfirmation::GenericConfirmation( Panel *parent, const char *panelName )
 {
 	SetProportional( true );
 
-#ifdef TF_VINTAGE_CLIENT
-	m_pBtnOK = new CExMenuButton( this, "BtnOK", "", this, "OK" );
-	m_pBtnCancel = new CExMenuButton( this, "BtnCancel", "", this, "cancel" );
-#else
-	m_pBtnOK = new vgui::Button( this, "BtnOK", "", this, "OK" );
-	m_pBtnCancel = new vgui::Button( this, "BtnCancel", "", this, "cancel" );
-#endif
+	m_pBtnOK = new CTFMenuButton( this, "BtnOK", "", this, "OK" );
+	m_pBtnCancel = new CTFMenuButton( this, "BtnCancel", "", this, "cancel" );
 
 	SetTitle( "", false );
 	SetDeleteSelfOnClose( true );
 	SetLowerGarnishEnabled( false );
 	SetMoveable( false );
-#ifdef TF_VINTAGE_CLIENT
 	SetPaintBackgroundEnabled( false );
 	SetPaintBackgroundType( 0 );
-#endif
 }
 
 //=============================================================================
@@ -165,16 +154,11 @@ void GenericConfirmation::OnOpen( )
 	m_bNeedsMoveToFront = true;
 }
 
-#ifdef TF_VINTAGE_CLIENT
-void ExpandButtonWidthIfNecessary( CExMenuButton *pButton )
-#else
-void ExpandButtonWidthIfNecessary( CExMenuButton *pButton )
-#endif
+void ExpandButtonWidthIfNecessary( CTFMenuButton *pButton )
 {
 	int originalWide, originalTall;
 	pButton->GetSize( originalWide, originalTall );
-
-	pButton->SizeToContents();
+	//pButton->SizeToContents();
 
 	// restore tall
 	pButton->SetTall( originalTall );
@@ -183,9 +167,7 @@ void ExpandButtonWidthIfNecessary( CExMenuButton *pButton )
 
 	// if we're smaller than original wide, restore wide
 	if ( pButton->GetWide() < iMinButtonWidth )
-	{
 		pButton->SetWide( originalWide );
-	}
 }
 
 //=============================================================================
@@ -257,23 +239,13 @@ void GenericConfirmation::LoadLayout()
 	int buttonTall = 0;
 
 	// On the PC, the buttons will be the same size, use the OK button
-#ifdef TF_VINTAGE_CLIENT
-	CExMenuButton *pOkButton = NULL;
-	CExMenuButton *pCancelButton = NULL;
-#else
-	vgui::Button *pOkButton = NULL;
-	vgui::Button *pCancelButton = NULL;
-#endif
+	CTFMenuButton *pOkButton = NULL;
+	CTFMenuButton *pCancelButton = NULL;
 
 	if ( IsPC() )
 	{
-#ifdef TF_VINTAGE_CLIENT
-		pOkButton = dynamic_cast< CExMenuButton* >( FindChildByName( "BtnOk" ) );
-		pCancelButton = dynamic_cast< CExMenuButton* >( FindChildByName( "BtnCancel" ) );
-#else
-		pOkButton = dynamic_cast< vgui::Button* >( FindChildByName( "BtnOk" ) );
-		pCancelButton = dynamic_cast< vgui::Button* >( FindChildByName( "BtnCancel" ) );
-#endif
+		pOkButton = dynamic_cast< CTFMenuButton* >( FindChildByName( "BtnOk" ) );
+		pCancelButton = dynamic_cast< CTFMenuButton* >( FindChildByName( "BtnCancel" ) );
 		pOkButton->GetSize( buttonWide, buttonTall );
 	}
 
@@ -349,11 +321,7 @@ void GenericConfirmation::LoadLayout()
 		if ( m_data.bCancelButtonEnabled || m_data.bOkButtonEnabled )
 		{
 			// when only one button is enabled, center that button
-#ifdef TF_VINTAGE_CLIENT
-			CExMenuButton *pButton = NULL;
-#else
-			vgui::Button *pButton = NULL;
-#endif
+			CTFMenuButton *pButton = NULL;
 			bool bSingleButton = false;
 			if ( ( m_data.bCancelButtonEnabled && !m_data.bOkButtonEnabled ) )
 			{
@@ -388,11 +356,7 @@ void GenericConfirmation::LoadLayout()
 //=============================================================================
 void GenericConfirmation::PaintBackground()
 {
-#ifdef TF_VINTAGE_CLIENT
 	BaseClass::PaintBackground();
-#else
-	BaseClass::DrawGenericDialog();
-#endif
 
 	if ( m_bNeedsMoveToFront )
 	{
@@ -462,9 +426,7 @@ void GenericConfirmation::ApplySchemeSettings(IScheme *pScheme)
 
 	LoadLayout();
 
-#ifdef TF_VINTAGE_CLIENT
 	SetBorder( pScheme->GetBorder( "EconItemBorder" ) );
-#endif
 
 	//
 	// Override title and msg font
@@ -473,17 +435,11 @@ void GenericConfirmation::ApplySchemeSettings(IScheme *pScheme)
 	m_hMessageFont = pScheme->GetFont( "HudFontSmallBold", true );
 
 	if ( m_LblTitle )
-	{
 		m_LblTitle->SetFont( m_hTitleFont );
-	}
 
 	if ( m_pLblMessage )
-	{
 		m_pLblMessage->SetFont( m_hMessageFont );
-	}
 
 	if ( m_pLblCheckBox )
-	{
 		m_pLblCheckBox->SetFont( m_hMessageFont );
-	}
 }

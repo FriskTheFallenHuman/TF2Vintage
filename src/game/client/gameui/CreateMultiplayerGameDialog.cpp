@@ -8,35 +8,38 @@
 #include "CreateMultiplayerGameDialog.h"
 #include "CreateMultiplayerGameServerPage.h"
 #include "CreateMultiplayerGameGameplayPage.h"
-#include "CreateMultiplayerGameBotPage.h"
 
 #include "EngineInterface.h"
 #include "ModInfo.h"
 #include "GameUI_Interface.h"
-
 #include <stdio.h>
-
-using namespace vgui;
-
 #include "vgui_controls/ComboBox.h"
+#include "vgui_controls/PropertySheet.h"
 #include <vgui/ILocalize.h>
-
 #include "filesystem.h"
 #include <KeyValues.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
+using namespace vgui;
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
 CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog( vgui::Panel *parent ) : PropertyDialog( parent, "CreateMultiplayerGameDialog" )
 {
+	SetProportional( true );
+	SetMoveable( false );
+	SetSizeable( false );
 	SetDeleteSelfOnClose( true );
-	SetSize( 348, 460 );
+	SetKeyBoardInputEnabled( true );
+	SetMouseInputEnabled( true );
 	
-	SetTitle( "#GameUI_CreateServer", true );
-	SetOKButtonText( "#GameUI_Start" );
+	SetTitle( "", false );
+
+	m_pServerPage = new CCreateMultiplayerGameServerPage( this, "ServerPage" );
+	m_pGameplayPage = new CCreateMultiplayerGameGameplayPage( this, "GameplayPage" );
 
 	// create KeyValues object to load/save config options
 	m_pSavedData = new KeyValues( "ServerConfig" );
@@ -45,20 +48,10 @@ CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog( vgui::Panel *parent 
 	if ( m_pSavedData )
 	{
 		m_pSavedData->LoadFromFile( g_pFullFileSystem, "ServerConfig.vdf", "GAME" ); // this is game-specific data, so it should live in GAME, not CONFIG
-
 		const char *startMap = m_pSavedData->GetString( "map", "" );
 		if ( startMap[0] )
 			m_pServerPage->SetMap( startMap );
 	}
-
-	m_pServerPage = new CCreateMultiplayerGameServerPage( this, "ServerPage" );
-	m_pServerPage->EnableBots( m_pSavedData );
-	m_pGameplayPage = new CCreateMultiplayerGameGameplayPage( this, "GameplayPage" );
-	m_pBotPage = new CCreateMultiplayerGameBotPage( this, "BotPage", m_pSavedData );
-
-	AddPage( m_pServerPage, "#GameUI_Server" );
-	AddPage( m_pGameplayPage, "#GameUI_Game" );
-	AddPage( m_pBotPage, "#GameUI_CPUPlayerOptions" );
 }
 
 //-----------------------------------------------------------------------------
@@ -71,6 +64,15 @@ CCreateMultiplayerGameDialog::~CCreateMultiplayerGameDialog()
 		m_pSavedData->deleteThis();
 		m_pSavedData = NULL;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CCreateMultiplayerGameDialog::SetupTabs()
+{
+	AddPage( m_pServerPage, "#GameUI_Server" );
+	AddPage( m_pGameplayPage, "#GameUI_Game" );
 }
 
 //-----------------------------------------------------------------------------
@@ -122,4 +124,36 @@ bool CCreateMultiplayerGameDialog::OnOK( bool applyOnly )
 	engine->ClientCmd_Unrestricted( szMapCommand );
 
 	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Sets up the sheet
+//-----------------------------------------------------------------------------
+void CCreateMultiplayerGameDialog::PerformLayout()
+{
+	// Skip PropertyDialog baseclass has we do it ourselves 
+	Frame::PerformLayout();
+
+	int iBottom = m_iSheetInsetBottom;
+	if ( IsProportional() )
+		iBottom = scheme()->GetProportionalScaledValueEx( GetScheme(), iBottom );
+
+	int x, y, wide, tall;
+	GetClientArea( x, y, wide, tall );
+	GetPropertySheet()->SetBounds( x, y, wide, tall - iBottom );
+
+	GetPropertySheet()->InvalidateLayout(); // tell the propertysheet to redraw!
+	Repaint();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CCreateMultiplayerGameDialog::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/CreateMultiplayerGameDialog.res" );
+
+	SetupTabs();
 }

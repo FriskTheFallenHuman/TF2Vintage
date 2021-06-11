@@ -69,6 +69,7 @@ namespace
 
 			SetBlockDragChaining( true );
 		}
+		virtual ~GripPanel() {}
 		
 		// Purpose- handle window resizing
 		// Input- dx, dy, the offet of the mouse pointer from where we started dragging
@@ -265,6 +266,7 @@ namespace
 		CaptionGripPanel(Frame* frame, const char *name) : GripPanel(frame, name, 0, 0)
 		{
 		}
+		virtual ~CaptionGripPanel() {}
 		
 		void moved(int dx, int dy)
 		{
@@ -523,6 +525,7 @@ namespace vgui
 			SetTextInset(2, 1);
 			SetBlockDragChaining( true );
 		}
+		virtual ~FrameButton() {}
 		
 		virtual void ApplySchemeSettings(IScheme *pScheme)
 		{
@@ -628,6 +631,7 @@ public:
 		SetMouseClickEnabled( MOUSE_RIGHT, true );
 		SetBlockDragChaining( true );
 	}
+	virtual ~FrameSystemButton() {}
 	
 	void SetImages( const char *pEnabledImage, const char *pDisabledImage = NULL )
 	{
@@ -783,10 +787,8 @@ Frame::Frame(Panel *parent, const char *panelName, bool showTaskbarIcon /*=true*
 	m_bPrimed = false;
 	m_hCustomTitleFont = INVALID_FONT;
 
-	SetTitle("#Frame_Untitled", parent ? false : true);
-	
-	// add ourselves to the build group
-	SetBuildGroup(GetBuildGroup());
+	// HACK HACK: "Remove" the untitled text
+	SetTitle( /*"#Frame_Untitled"*/ "", parent ? false : true);
 	
 	SetMinimumSize(128,66);
 	
@@ -1641,6 +1643,16 @@ void Frame::PaintBackground()
 	}
 }
 
+Color Frame::GetOutOfFocusColor()
+{
+	return m_OutOfFocusBgColor;
+}
+
+void Frame::SetOutOfFocusColor(Color col)
+{
+	m_OutOfFocusBgColor = col;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -2170,12 +2182,7 @@ void Frame::OnKeyCodeTyped(KeyCode code)
 		}
 	}
 
-	if ( ctrl && shift && alt && code == KEY_B)
-	{
-		// enable build mode
-		ActivateBuildMode();
-	}
-	else if (ctrl && shift && alt && code == KEY_R)
+	if (ctrl && shift && alt && code == KEY_R)
 	{
 		// reload the scheme
 		VPANEL top = surface()->GetEmbeddedPanel();

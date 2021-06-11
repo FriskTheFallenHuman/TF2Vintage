@@ -92,8 +92,26 @@ VControlsListPanel::~VControlsListPanel()
 void VControlsListPanel::ApplySchemeSettings(IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings( pScheme );
+
+#ifdef TF_VINTAGE_CLIENT
+	m_hFont	= pScheme->GetFont("MenuSmallFont", IsProportional() ); 
+#else
 	m_hFont	= pScheme->GetFont("Default", IsProportional() ); 
+#endif
 }
+
+#ifdef TF_VINTAGE_CLIENT
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void VControlsListPanel::ApplySettings( KeyValues *inResourceData )
+{
+	BaseClass::ApplySettings( inResourceData );
+
+	Q_strncpy( m_szFont, inResourceData->GetString( "font", "MenuSmallFont" ), sizeof( m_szFont ) );
+	InvalidateLayout( false, true ); // force ApplySchemeSettings to run
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Start capture prompt display

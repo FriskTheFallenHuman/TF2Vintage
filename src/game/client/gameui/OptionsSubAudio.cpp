@@ -374,7 +374,8 @@ void COptionsSubAudio::OpenThirdPartySoundCreditsDialog()
 
 COptionsSubAudioThirdPartyCreditsDlg::COptionsSubAudioThirdPartyCreditsDlg( vgui::VPANEL hParent ) : BaseClass( NULL, NULL )
 {
-    SetTitle("#GameUI_ThirdPartyAudio_Title", true);
+	// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
+	SetTitle("#GameUI_ThirdPartyAudio_Title", true);
     SetSize(500, 200);
     LoadControlSettings("Resource/OptionsSubAudioThirdPartyDLG.res");
     MoveToCenterOfScreen();

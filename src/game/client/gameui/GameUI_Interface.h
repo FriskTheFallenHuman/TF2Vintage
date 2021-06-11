@@ -34,9 +34,6 @@ public:
 	virtual void RunFrame();
 	virtual void PostInit();
 
-	// plays the startup mp3 when GameUI starts
-	void PlayGameStartupSound();
-
 	// Engine wrappers for activating / hiding the gameUI
 	void ActivateGameUI();
 	void HideGameUI();
@@ -64,10 +61,6 @@ public:
 
 	// Allows the level loading progress to show map-specific info
 	virtual void SetProgressLevelName( const char *levelName ) {}
-
- 	virtual void NeedConnectionProblemWaitScreen();
-
-	virtual void ShowPasswordUI( char const *pchCurrentPW );
 
  	virtual void SetProgressOnStart();
 

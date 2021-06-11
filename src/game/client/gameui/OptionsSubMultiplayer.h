@@ -14,7 +14,6 @@
 #include <vgui_controls/PropertyPage.h>
 
 class CLabeledCommandComboBox;
-class CBitmapImagePanel;
 
 class CCvarToggleCheckButton;
 class CCvarTextEntry;
@@ -133,11 +132,6 @@ private:
 	void SelectLogo(const char *logoName);
 	// End Spray Import Functions
 
-	int	m_nLogoR;
-	int	m_nLogoG;
-	int	m_nLogoB;
-
-	vgui::DHANDLE<CMultiplayerAdvancedDialog> m_hMultiplayerAdvancedDialog;
 	vgui::FileOpenDialog *m_hImportSprayDialog;
 };
 

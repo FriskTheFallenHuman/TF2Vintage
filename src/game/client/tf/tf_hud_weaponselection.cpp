@@ -19,13 +19,14 @@
 #include <vgui_controls/EditablePanel.h>
 
 #include "vgui/ILocalize.h"
-#include "controls/tf_advbuttonbase.h"
 
 #include <string.h>
 #include "baseobject_shared.h"
 #include "tf_imagepanel.h"
 #include "c_tf_player.h"
 #include "c_tf_weapon_builder.h"
+
+using namespace vgui;
 
 #define SELECTION_TIMEOUT_THRESHOLD		2.5f	// Seconds
 #define SELECTION_FADEOUT_TIME			3.0f
@@ -128,21 +129,24 @@ void CItemModelPanel::PerformLayout()
 	m_pWeaponImage->SetZPos(-1);
 	m_pWeaponName->SetBounds(XRES(5), GetTall() - YRES(20), GetWide() - XRES(10), YRES(20));
 	m_pWeaponName->SetFont(m_iBorderStyle ? m_pSelectedFont : m_pDefaultFont);
-	m_pWeaponName->SetContentAlignment(CTFAdvButtonBase::GetAlignment("center"));
+	m_pWeaponName->SetContentAlignment( vgui::Label::a_center );
 	m_pWeaponName->SetCenterWrap(true);
-	if (m_pWeapon && !m_pWeapon->CanBeSelected())
+
+	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme( GetScheme() );
+	if ( m_pWeapon && !m_pWeapon->CanBeSelected() )
 	{
-		wchar_t *pText = g_pVGuiLocalize->Find("#TF_OUT_OF_AMMO");
-		m_pWeaponName->SetText(pText);
-		m_pWeaponName->SetFgColor(GETSCHEME()->GetColor("RedSolid", Color(255, 255, 255, 255)));
+		wchar_t *pText = g_pVGuiLocalize->Find( "#TF_OUT_OF_AMMO" );
+		m_pWeaponName->SetText( pText );
+		m_pWeaponName->SetFgColor( pScheme->GetColor( "RedSolid", Color( 255, 255, 255, 255 ) ) );
 	}
 	else
 	{
-		m_pWeaponName->SetFgColor(GETSCHEME()->GetColor("TanLight", Color(255, 255, 255, 255)));
+		m_pWeaponName->SetFgColor( pScheme->GetColor( "TanLight", Color( 255, 255, 255, 255 ) ) );
 	}
+
 	m_pSlotID->SetBounds(0, YRES(5), GetWide() - XRES(5), YRES(10));
 	m_pSlotID->SetFont(m_iBorderStyle ? m_pNumberSelectedFont : m_pNumberDefaultFont);
-	m_pSlotID->SetContentAlignment(CTFAdvButtonBase::GetAlignment("east"));
+	m_pSlotID->SetContentAlignment( vgui::Label::a_east );
 }
 
 //-----------------------------------------------------------------------------

@@ -15,7 +15,6 @@
 
 class CCreateMultiplayerGameServerPage;
 class CCreateMultiplayerGameGameplayPage;
-class CCreateMultiplayerGameBotPage;
 
 //-----------------------------------------------------------------------------
 // Purpose: dialog for launching a listenserver
@@ -28,13 +27,18 @@ public:
 	CCreateMultiplayerGameDialog( vgui::Panel *parent );
 	~CCreateMultiplayerGameDialog();
 
+	void SetupTabs();
+	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
+
 protected:
+
+	// vgui overrides
+	virtual void PerformLayout() OVERRIDE;
 	virtual bool OnOK( bool applyOnly );
 
 private:
 	CCreateMultiplayerGameServerPage *m_pServerPage;
 	CCreateMultiplayerGameGameplayPage *m_pGameplayPage;
-	CCreateMultiplayerGameBotPage *m_pBotPage;
 
 	// for loading/saving game config
 	KeyValues *m_pSavedData;

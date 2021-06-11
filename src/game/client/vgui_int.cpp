@@ -196,6 +196,8 @@ bool VGui_Startup( CreateInterfaceFn appSystemFactory )
 	//Tony; add localization for the specific SDK.
 #if defined( TF_VINTAGE_CLIENT )
 	g_pVGuiLocalize->AddFile( "resource/tf_%language%.txt", "GAME" );
+	g_pVGuiLocalize->AddFile( "resource/tf_proto_obj_defs_%language%.txt", "GAME" ); // Not sure what is this but live tf2 uses it
+	g_pVGuiLocalize->AddFile( "resource/tf_quests_%language%.txt", "GAME" ); // Apparently this is used for the contrackter
 #endif
 
 	return true;

@@ -100,3 +100,4 @@ tf2v_use_new_demo_explosion_variance 2
 tf2v_new_sentry_wrangle_location 1
 tf2v_new_sentry_damage_falloff 1
 tf2v_legacy_weapons 0
+tf2v_use_faster_reload 1

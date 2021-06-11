@@ -10,7 +10,7 @@
 #pragma once
 #endif
 
-class CTFAdvModelPanel;
+//class CTFAdvModelPanel;
 
 class CHudInspectPanel : public CHudElement, public vgui::EditablePanel
 {
@@ -29,7 +29,7 @@ private:
 	void LockInspectRenderGroup( bool bLock );
 	void SetPanelVisible( bool bVisible );
 
-	CTFAdvModelPanel *m_pItemPanel;
+	//CTFAdvModelPanel *m_pItemPanel;
 };
 
 #endif

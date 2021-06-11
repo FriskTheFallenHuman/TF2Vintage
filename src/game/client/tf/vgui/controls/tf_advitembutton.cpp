@@ -10,7 +10,9 @@
 #include <filesystem.h>
 #include <vgui_controls/AnimationController.h>
 #include "basemodelpanel.h"
+#ifndef GAMEUI_EMBEDDED
 #include "panels/tf_dialogpanelbase.h"
+#endif // GAMEUI_EMBEDDED
 #include "inputsystem/iinputsystem.h"
 #include "tf_inventory.h"
 
@@ -108,16 +110,22 @@ void CTFAdvItemButton::SendAnimation(MouseState flag)
 	switch (flag)
 	{
 	case MOUSE_DEFAULT:
+#ifndef GAMEUI_EMBEDDED
 		if ( m_pItemDefinition )
 			MAINMENU_ROOT->ShowItemToolTip( m_pItemDefinition );
+#endif // GAMEUI_EMBEDDED
 		break;
 	case MOUSE_ENTERED:
+#ifndef GAMEUI_EMBEDDED
 		if ( m_pItemDefinition )
 			MAINMENU_ROOT->ShowItemToolTip( m_pItemDefinition );
+#endif // GAMEUI_EMBEDDED
 		break;
 	case MOUSE_EXITED:
+#ifndef GAMEUI_EMBEDDED
 		if ( m_pItemDefinition )
 			MAINMENU_ROOT->HideItemToolTip();
+#endif // GAMEUI_EMBEDDED
 		break;
 	case MOUSE_PRESSED:
 		break;

@@ -36,35 +36,19 @@ using namespace vgui;
 //-----------------------------------------------------------------------------
 // Purpose: Basic help dialog
 //-----------------------------------------------------------------------------
-COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "OptionsDialog")
+COptionsDialog::COptionsDialog( vgui::Panel *parent ) : BaseClass( parent, "OptionsDialog" )
 {
-	SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/SourceScheme.res", "SourceScheme" ) );
-
-	SetDeleteSelfOnClose(true);
-	SetBounds(0, 0, 512, 406);
+	SetProportional( true );
+	SetMoveable( false );
 	SetSizeable( false );
+	SetDeleteSelfOnClose( true );
+	SetKeyBoardInputEnabled( true );
+	SetMouseInputEnabled( true );
 
-	SetTitle("#GameUI_Options", true);
+	SetTitle( "", false );
 
-	// debug timing code, this function takes too long
-//	double s4 = system()->GetCurrentTime();
-
-	AddPage(new COptionsSubKeyboard(this), "#GameUI_Keyboard");
-	AddPage(new COptionsSubMouse(this), "#GameUI_Mouse");
-
-	m_pOptionsSubAudio = new COptionsSubAudio(this);
-	AddPage(m_pOptionsSubAudio, "#GameUI_Audio");
-	m_pOptionsSubVideo = new COptionsSubVideo(this);
-	AddPage(m_pOptionsSubVideo, "#GameUI_Video");
-
-	AddPage(new COptionsSubVoice(this), "#GameUI_Voice");
-	AddPage(new COptionsSubMultiplayer(this), "#GameUI_Multiplayer");
-
-//	double s5 = system()->GetCurrentTime();
-//	Msg("COptionsDialog::COptionsDialog(): %.3fms\n", (float)(s5 - s4) * 1000.0f);
-
-	SetApplyButtonVisible(true);
-	GetPropertySheet()->SetTabWidth(84);
+	m_pOptionsSubAudio = new COptionsSubAudio( this );
+	m_pOptionsSubVideo = new COptionsSubVideo( this );
 }
 
 //-----------------------------------------------------------------------------
@@ -75,12 +59,25 @@ COptionsDialog::~COptionsDialog()
 }
 
 //-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void COptionsDialog::SetupTabs()
+{
+	AddPage( new COptionsSubKeyboard( this ), "#GameUI_Keyboard" );
+	AddPage( new COptionsSubMouse( this ), "#GameUI_Mouse" );
+	AddPage( m_pOptionsSubAudio, "#GameUI_Audio" );
+	AddPage( m_pOptionsSubVideo, "#GameUI_Video" );
+	AddPage( new COptionsSubVoice( this ), "#GameUI_Voice" );
+	AddPage( new COptionsSubMultiplayer( this ), "#GameUI_Multiplayer" );
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Brings the dialog to the fore
 //-----------------------------------------------------------------------------
 void COptionsDialog::Activate()
 {
 	BaseClass::Activate();
-	EnableApplyButton(false);
+	EnableApplyButton( false );
 }
 
 //-----------------------------------------------------------------------------
@@ -88,8 +85,27 @@ void COptionsDialog::Activate()
 //-----------------------------------------------------------------------------
 void COptionsDialog::Run()
 {
-	SetTitle("#GameUI_Options", true);
 	Activate();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Sets up the sheet
+//-----------------------------------------------------------------------------
+void COptionsDialog::PerformLayout()
+{
+	// Skip PropertyDialog baseclass has we do it ourselves 
+	Frame::PerformLayout();
+
+	int iBottom = m_iSheetInsetBottom;
+	if ( IsProportional() )
+		iBottom = scheme()->GetProportionalScaledValueEx( GetScheme(), iBottom );
+
+	int x, y, wide, tall;
+	GetClientArea( x, y, wide, tall );
+	GetPropertySheet()->SetBounds( x, y, wide, tall - iBottom );
+
+	GetPropertySheet()->InvalidateLayout(); // tell the propertysheet to redraw!
+	Repaint();
 }
 
 //-----------------------------------------------------------------------------
@@ -102,8 +118,18 @@ void COptionsDialog::OnGameUIHidden()
 	{
 		Panel *pChild = GetChild( i );
 		if ( pChild )
-		{
 			PostMessage( pChild, new KeyValues( "GameUIHidden" ) );
-		}
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void COptionsDialog::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/OptionsDialog.res" );
+
+	SetupTabs();
 }

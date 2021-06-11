@@ -51,6 +51,29 @@ protected:
 	float			m_flAnimationThink;
 };
 
+#ifdef GAMEUI_EMBEDDED
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+class CTFMenuButton : public CTFAdvButton
+{
+	friend class CTFButton;
+	friend class CTFAdvButton;
+public:
+	DECLARE_CLASS_SIMPLE( CTFAdvButton, CTFAdvButton );
+
+	// You can optionally pass in the panel to send the click message to and the name of the command to send to that panel.
+	CTFMenuButton( vgui::Panel *parent, const char *panelName, const char *text, Panel *pActionSignalTarget=NULL, const char *pCmd=NULL );
+	~CTFMenuButton();
+
+	CTFButton *GetButton(){ return pButton; };
+
+private:
+	typedef CTFAdvButton BaseClass;
+
+	CTFButton		*pButton;
+};
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: 

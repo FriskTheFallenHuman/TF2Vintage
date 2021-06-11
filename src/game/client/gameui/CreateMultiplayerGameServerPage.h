@@ -25,34 +25,25 @@ public:
 	CCreateMultiplayerGameServerPage( vgui::Panel *parent, const char *name );
 	~CCreateMultiplayerGameServerPage();
 
+	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
+
 	// returns currently entered information about the server
 	void SetMap( const char *name );
 	bool IsRandomMapSelected();
 	const char *GetMapName();
-
 	vgui::ComboBox *GetMapList( void ) { return m_pMapList; }
-
-	// TF Bots
-	void EnableBots( KeyValues *data );
-	int GetBotQuota( void );
-	bool GetBotsEnabled( void );
 
 protected:
 	virtual void OnApplyChanges();
-	MESSAGE_FUNC( OnCheckButtonChecked, "CheckButtonChecked" );
 
 private:
 	void LoadMapList();
 	void LoadMaps( const char *pszPathID );
 
 	vgui::ComboBox *m_pMapList;
-	vgui::CheckButton *m_pEnableBotsCheck;
-	CCvarToggleCheckButton *m_pEnableTutorCheck;
-	KeyValues *m_pSavedData;
 
 	enum { DATA_STR_LENGTH = 64 };
 	char m_szMapName[DATA_STR_LENGTH];
 };
-
 
 #endif // CREATEMULTIPLAYERGAMESERVERPAGE_H

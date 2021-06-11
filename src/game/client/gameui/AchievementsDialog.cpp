@@ -15,6 +15,7 @@
 #include "filesystem.h"
 #include "vgui_controls/ImagePanel.h"
 #include "vgui_controls/ComboBox.h"
+#include <vgui_controls/ScrollBar.h>
 #include "BasePanel.h"
 #include "fmtstr.h"
 
@@ -129,24 +130,27 @@ void UpdateProgressBar( vgui::EditablePanel* pPanel, IAchievement *pAchievement,
 //-----------------------------------------------------------------------------
 // Purpose: creates child panels, passes down name to pick up any settings from res files.
 //-----------------------------------------------------------------------------
-CAchievementsDialog::CAchievementsDialog(vgui::Panel *parent) : BaseClass(parent, "AchievementsDialog")
+CAchievementsDialog::CAchievementsDialog( vgui::Panel *parent ) : BaseClass( parent, "AchievementsDialog" )
 {
-	SetDeleteSelfOnClose(true);
-	SetBounds(0, 0, 512, 384);
-	SetMinimumSize( 256, 300 );
-	SetSizeable( true );
+	SetBounds( 0, 0, 750, 490 );
+	SetDeleteSelfOnClose( true );
+	SetKeyBoardInputEnabled( true );
+	SetMouseInputEnabled( true );
+	
+	SetTitle( "", false );
 
 	m_nUnlocked = 0;
 
 	m_pAchievementsList = new vgui::PanelListPanel( this, "listpanel_achievements" );
 	m_pAchievementsList->SetFirstColumnWidth( 0 );
+	m_pAchievementsList->GetScrollbar()->UseImages( "chalkboard_scroll_up", "chalkboard_scroll_down", "chalkboard_scroll_line", "chalkboard_scroll_box" );
 
 	m_pListBG = new vgui::ImagePanel( this, "listpanel_background" );
 
 	m_pPercentageBarBackground = SETUP_PANEL( new ImagePanel( this, "PercentageBarBackground" ) );
 	m_pPercentageBar = SETUP_PANEL( new ImagePanel( this, "PercentageBar" ) );
 
-	m_pAchievementPackCombo = new ComboBox(this, "achievement_pack_combo", 10, false);
+	m_pAchievementPackCombo = new ComboBox( this, "achievement_pack_combo", 10, false );
 
 	// int that holds the highest number achievement id we've found
 	int iHighestAchievementIDSeen = -1;
@@ -166,7 +170,6 @@ CAchievementsDialog::CAchievementsDialog(vgui::Panel *parent) : BaseClass(parent
 		for ( int i = 0; i < iCount; ++i )
 		{		
 			IAchievement* pCur = achievementmgr->GetAchievementByIndex( i );
-
 			if ( !pCur )
 				continue;
 
@@ -223,23 +226,15 @@ CAchievementsDialog::CAchievementsDialog(vgui::Panel *parent) : BaseClass(parent
 		char buf[128];
 
 		if ( i == 0 )
-		{
 			Q_snprintf( buf, sizeof(buf), "#Achievement_Group_All" );
-		}
 		else
-		{
 			Q_snprintf( buf, sizeof(buf), "#Achievement_Group_%d", m_AchievementGroups[i].m_iMinRange );
-		}		
 
 		wchar_t *wzGroupName = g_pVGuiLocalize->Find( buf );
-
 		if ( !wzGroupName )
-		{
 			wzGroupName = L"Need Title ( %s1 of %s2 )";
-		}
 
 		wchar_t wzGroupTitle[128];
-
 		if ( wzGroupName )
 		{
 			wchar_t wzNumUnlocked[8];
@@ -288,7 +283,7 @@ void CAchievementsDialog::ApplySettings( KeyValues *pResourceData )
 //----------------------------------------------------------
 // Preserve our width to the one in the .res file
 //----------------------------------------------------------
-void CAchievementsDialog::OnSizeChanged(int newWide, int newTall)
+void CAchievementsDialog::OnSizeChanged( int newWide, int newTall)
 {
 	// Lock the width, but allow height scaling
 	if ( newWide != m_iFixedWidth )
@@ -297,13 +292,13 @@ void CAchievementsDialog::OnSizeChanged(int newWide, int newTall)
 		return;
 	}
 
-	BaseClass::OnSizeChanged(newWide, newTall);
+	BaseClass::OnSizeChanged( newWide, newTall );
 }
 
 //----------------------------------------------------------
 // New group was selected in the dropdown, recalc what achievements to show
 //----------------------------------------------------------
-void CAchievementsDialog::OnTextChanged(KeyValues *data)
+void CAchievementsDialog::OnTextChanged( KeyValues *data )
 {
 	Panel *pPanel = (Panel *)data->GetPtr( "panel", NULL );
 
@@ -311,7 +306,6 @@ void CAchievementsDialog::OnTextChanged(KeyValues *data)
 	if ( pPanel == m_pAchievementPackCombo )
 	{
 		// Re-populate the achievement list with the selected group
-
 		m_pAchievementsList->DeleteAllItems();
 
 		KeyValues *pData = m_pAchievementPackCombo->GetActiveItemUserData();
@@ -358,7 +352,8 @@ void CAchievementsDialog::OnTextChanged(KeyValues *data)
 void CAchievementsDialog::ApplySchemeSettings( IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings( pScheme );
-	LoadControlSettings("resource/ui/AchievementsDialog.res");
+
+	LoadControlSettings( "resource/AchievementsDialog.res" );
 
 	if ( !achievementmgr )
 	{
@@ -535,9 +530,7 @@ void CAchievementDialogItemPanel::ApplySchemeSettings( IScheme* pScheme )
 	m_pSchemeSettings = pScheme;
 	
 	if ( !m_pSourceAchievement )
-	{
 		return;
-	}
 
 	BaseClass::ApplySchemeSettings( pScheme );
 

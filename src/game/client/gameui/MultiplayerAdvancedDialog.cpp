@@ -9,7 +9,6 @@
 #include <time.h>
 
 #include "MultiplayerAdvancedDialog.h"
-
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include <vgui_controls/ListPanel.h>
@@ -21,10 +20,10 @@
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/TextEntry.h>
 #include <vgui_controls/Slider.h>
+#include "vgui_controls/PropertyDialog.h"
 #include "PanelListPanel.h"
 #include "ScriptObject.h"
 #include <vgui/IInput.h>
-
 #include "filesystem.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -39,20 +38,22 @@ using namespace vgui;
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CMultiplayerAdvancedDialog::CMultiplayerAdvancedDialog(vgui::Panel *parent) : BaseClass(NULL, "MultiplayerAdvancedDialog")
+CMultiplayerAdvancedDialog::CMultiplayerAdvancedDialog( vgui::Panel *parent ) : BaseClass( parent, "MultiplayerAdvancedDialog" )
 {
-	SetScheme(vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/SourceScheme.res", "SourceScheme" ) );
-	
-	SetBounds(0, 0, 855, 450);
-	SetMinimumSize( 368, 193 );
+	SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" ) );
 
-	SetTitle("#GameUI_MultiplayerAdvanced", true);
+	SetProportional( true );
+	SetKeyBoardInputEnabled( true );
+	SetMouseInputEnabled( true );
+	SetOKButtonVisible( false );
+	SetCancelButtonVisible( false );
+	SetApplyButtonVisible( false );
 
 	Button *cancel = new Button( this, "Cancel", "#GameUI_Cancel" );
 	cancel->SetCommand( "Close" );
 
 	Button *ok = new Button( this, "OK", "#GameUI_OK" );
-	ok->SetCommand( "Ok" );
+	ok->SetCommand( "OK" );
 
 	m_pListPanel = new CPanelListPanel( this, "PanelListPanel" );
 
@@ -62,13 +63,6 @@ CMultiplayerAdvancedDialog::CMultiplayerAdvancedDialog(vgui::Panel *parent) : Ba
 	m_pDescription->InitFromFile( DEFAULT_OPTIONS_FILE );
 	m_pDescription->InitFromFile( OPTIONS_FILE );
 	m_pDescription->TransferCurrentValues( NULL );
-
-	LoadControlSettings("Resource/MultiplayerAdvancedDialog.res");
-	CreateControls();
-
-	MoveToCenterOfScreen();
-	SetSizeable( false );
-	SetDeleteSelfOnClose( true );
 }
 
 //-----------------------------------------------------------------------------
@@ -85,9 +79,61 @@ CMultiplayerAdvancedDialog::~CMultiplayerAdvancedDialog()
 void CMultiplayerAdvancedDialog::Activate()
 {
 	BaseClass::Activate();
-	input()->SetAppModalSurface(GetVPanel());
+
+	// HACK HACK: Editable panel don't had Activated method so, we do it ourselves
+	/*SetVisible( true );
+	MakePopup();
+	MoveToFront();*/
+
+	input()->SetAppModalSurface( GetVPanel() );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Opens the dialog
+//-----------------------------------------------------------------------------
+void CMultiplayerAdvancedDialog::Run()
+{
+	Activate();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Called when the GameUI is hidden
+//-----------------------------------------------------------------------------
+void CMultiplayerAdvancedDialog::OnGameUIHidden()
+{
+	// tell our children about it
+	for ( int i = 0 ; i < GetChildCount() ; i++ )
+	{
+		Panel *pChild = GetChild( i );
+		if ( pChild )
+		{
+			PostMessage( pChild, new KeyValues( "GameUIHidden" ) );
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CMultiplayerAdvancedDialog::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/MultiplayerAdvancedDialog.res" );
+	CreateControls();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Command handler
+//-----------------------------------------------------------------------------
+bool CMultiplayerAdvancedDialog::OnOK( bool applyOnly )
+{
+	// OnApplyChanges();
+	SaveValues();
+	OnClose();
+
+	return BaseClass::OnOK( applyOnly );
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -104,23 +150,26 @@ void CMultiplayerAdvancedDialog::OnClose()
 //-----------------------------------------------------------------------------
 void CMultiplayerAdvancedDialog::OnCommand( const char *command )
 {
-	if ( !stricmp( command, "Ok" ) )
+	/*if ( !stricmp( command, "Ok" ) )
 	{
 		// OnApplyChanges();
 		SaveValues();
 		OnClose();
 		return;
-	}
+	}*/
 
 	BaseClass::OnCommand( command );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CMultiplayerAdvancedDialog::OnKeyCodeTyped(KeyCode code)
 {
 	// force ourselves to be closed if the escape key it pressed
 	if (code == KEY_ESCAPE)
 	{
-		Close();
+		OnClose();
 	}
 	else
 	{
@@ -246,6 +295,12 @@ void CMultiplayerAdvancedDialog::CreateControls()
 	Slider *pSlider;
 	CScriptListItem *pListItem;
 
+	IScheme *pScheme = scheme()->GetIScheme( GetScheme() );
+	vgui::HFont hTextSmallestFont = pScheme->GetFont( "HudFontSmallestBold", true );
+	vgui::HFont hTextSmallFont = pScheme->GetFont( "HudFontSmallBold", true );
+	Color colorTanDark = pScheme->GetColor( "TanDark", Color( 0, 0, 0, 255 ) );
+	Color colorTanLight = pScheme->GetColor( "TanLight", Color( 255, 255, 255, 255 ) );
+
 	Panel *objParent = m_pListPanel;
 
 	while ( pObj )
@@ -265,12 +320,24 @@ void CMultiplayerAdvancedDialog::CreateControls()
 			pBox = new CheckButton( pCtrl, "DescCheckButton", pObj->prompt );
 			pBox->SetSelected( pObj->fdefValue != 0.0f ? true : false );
 			pCtrl->pControl = (Panel *)pBox;
+			pBox->SetFont( hTextSmallestFont );
+			pBox->InvalidateLayout( true, true );
+			pBox->SetFgColor( colorTanDark );
+			pBox->SetDefaultColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetArmedColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetDepressedColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetSelectedColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetHighlightColor( colorTanDark );
+			pBox->GetCheckImage()->SetColor( colorTanDark );
 			break;
 		case O_STRING:
 		case O_NUMBER:
 			pEdit = new TextEntry( pCtrl, "DescTextEntry");
 			pEdit->InsertString(pObj->defValue);
 			pCtrl->pControl = (Panel *)pEdit;
+			pEdit->SetFont( hTextSmallestFont );
+			pEdit->InvalidateLayout( true, true );
+			pEdit->SetBgColor( Color(0,0,0,255) );
 			break;
 		case O_SLIDER:
 			pSlider = new Slider(pCtrl, "DescScrollEntry");
@@ -291,10 +358,13 @@ void CMultiplayerAdvancedDialog::CreateControls()
 			pCombo->ActivateItemByRow((int)pObj->fdefValue);
 
 			pCtrl->pControl = (Panel *)pCombo;
+			pCombo->SetFont( hTextSmallestFont );
 			break;
 		case O_CATEGORY:
 			pLabel = new Label(pCtrl, "DescTextTitle", pObj->prompt);
 			pCtrl->pControl = (Panel *)pLabel;
+			pCtrl->SetBorder( pScheme->GetBorder( "OptionsCategoryBorder" ) );
+			pLabel->SetFont( pScheme->GetFont( "MenuSmallFont", true ) );
 			break;
 		default:
 			break;
@@ -306,6 +376,20 @@ void CMultiplayerAdvancedDialog::CreateControls()
 			pCtrl->pPrompt->SetContentAlignment( vgui::Label::a_west );
 			pCtrl->pPrompt->SetTextInset( 5, 0 );
 			pCtrl->pPrompt->SetText( pObj->prompt );
+			pCtrl->pPrompt->SetFont( hTextSmallestFont );
+			pCtrl->pPrompt->InvalidateLayout( true, true );
+
+			// Stylish category section to match tf2 live panel
+			if ( pCtrl->type == O_CATEGORY )
+			{
+				pCtrl->pPrompt->SetFont( hTextSmallFont );
+				pCtrl->pPrompt->SetFgColor( colorTanLight );
+			}
+			else
+			{
+				pCtrl->pPrompt->SetFgColor( colorTanDark );
+			}
+
 		}
 
 		pCtrl->pScrObj = pObj;
@@ -389,8 +473,7 @@ void CMultiplayerAdvancedDialog::SaveValues()
 //-----------------------------------------------------------------------------
 // Purpose: Constructor, load/save client settings object
 //-----------------------------------------------------------------------------
-CInfoDescription::CInfoDescription( CPanelListPanel *panel )
-: CDescription( panel )
+CInfoDescription::CInfoDescription( CPanelListPanel *panel ) : CDescription( panel )
 {
 	setHint( "// NOTE:  THIS FILE IS AUTOMATICALLY REGENERATED, \r\n\
 //DO NOT EDIT THIS HEADER, YOUR COMMENTS WILL BE LOST IF YOU DO\r\n\
@@ -439,28 +522,14 @@ CInfoDescription::CInfoDescription( CPanelListPanel *panel )
 void CInfoDescription::WriteScriptHeader( FileHandle_t fp )
 {
     char am_pm[] = "AM";
-
-	tm timeVal;
-	VCRHook_LocalTime(&timeVal);
-
-	struct tm tmStruct;
-	struct tm newtime = *(Plat_localtime((const time_t*)&timeVal, &tmStruct));
-
-    if( newtime.tm_hour > 12 )        /* Set up extension. */
-		Q_strncpy( am_pm, "PM", sizeof( am_pm ) );
-	if( newtime.tm_hour > 12 )        /* Convert from 24-hour */
-		newtime.tm_hour -= 12;    /*   to 12-hour clock.  */
-	if( newtime.tm_hour == 0 )        /*Set hour to 12 if midnight. */
-		newtime.tm_hour = 12;
+	tm newtime;
+	VCRHook_LocalTime( &newtime );
 
 	g_pFullFileSystem->FPrintf( fp, (char *)getHint() );
 
-	char timeString[64];
-	Plat_ctime((const time_t*)&timeVal, timeString, sizeof(timeString));
-
 	// Write out the comment and Cvar Info:
 	g_pFullFileSystem->FPrintf( fp, "// Half-Life User Info Configuration Layout Script (stores last settings chosen, too)\r\n" );
-	g_pFullFileSystem->FPrintf( fp, "// File generated:  %.19s %s\r\n", timeString, am_pm );
+	g_pFullFileSystem->FPrintf( fp, "// File generated:  %.19s %s\r\n", asctime( &newtime ), am_pm );
 	g_pFullFileSystem->FPrintf( fp, "//\r\n//\r\n// Cvar\t-\tSetting\r\n\r\n" );
 	g_pFullFileSystem->FPrintf( fp, "VERSION %.1f\r\n\r\n", SCRIPT_VERSION );
 	g_pFullFileSystem->FPrintf( fp, "DESCRIPTION INFO_OPTIONS\r\n{\r\n" );
@@ -471,28 +540,12 @@ void CInfoDescription::WriteScriptHeader( FileHandle_t fp )
 //-----------------------------------------------------------------------------
 void CInfoDescription::WriteFileHeader( FileHandle_t fp )
 {
-    char am_pm[] = "AM";
-   
-	tm timeVal;
-	VCRHook_LocalTime(&timeVal);
-
-	struct tm tmStruct;
-	struct tm newtime = *(Plat_localtime((const time_t*)&timeVal, &tmStruct));
-
-    if( newtime.tm_hour > 12 )        /* Set up extension. */
-		Q_strncpy( am_pm, "PM", sizeof( am_pm ) );
-	if( newtime.tm_hour > 12 )        /* Convert from 24-hour */
-		newtime.tm_hour -= 12;    /*   to 12-hour clock.  */
-	if( newtime.tm_hour == 0 )        /*Set hour to 12 if midnight. */
-		newtime.tm_hour = 12;
-
-	char timeString[64];
-	Plat_ctime((const time_t*)&timeVal, timeString, sizeof(timeString));
+	char am_pm[] = "AM";
+	tm newtime;
+	VCRHook_LocalTime( &newtime );
 
 	g_pFullFileSystem->FPrintf( fp, "// Half-Life User Info Configuration Settings\r\n" );
 	g_pFullFileSystem->FPrintf( fp, "// DO NOT EDIT, GENERATED BY HALF-LIFE\r\n" );
-	g_pFullFileSystem->FPrintf( fp, "// File generated:  %.19s %s\r\n", timeString, am_pm );
+	g_pFullFileSystem->FPrintf( fp, "// File generated:  %.19s %s\r\n", asctime( &newtime ), am_pm );
 	g_pFullFileSystem->FPrintf( fp, "//\r\n//\r\n// Cvar\t-\tSetting\r\n\r\n" );
 }
-
-//-----------------------------------------------------------------------------

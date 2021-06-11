@@ -11,14 +11,8 @@
 #endif
 
 #include "vgui_controls/cvartogglecheckbutton.h"
-
 #include "basemodui.h"
-
-#ifdef TF_VINTAGE_CLIENT
-#include "tf_controls.h"
-#else
-#include "vgui_controls/Button.h"
-#endif
+#include "controls/tf_advbutton.h"
 
 namespace BaseModUI 
 {
@@ -72,13 +66,8 @@ namespace BaseModUI
 
 		vgui::CvarToggleCheckButton<ConVarRef> *m_pCheckBox;
 
-	#ifdef TF_VINTAGE_CLIENT
-		CExMenuButton *m_pBtnOK;
-		CExMenuButton *m_pBtnCancel;
-	#else
-		vgui::Button *m_pBtnOK;
-		vgui::Button *m_pBtnCancel;
-	#endif
+		CTFAdvButton *m_pBtnOK;
+		CTFAdvButton *m_pBtnCancel;
 
 	private:
 		vgui::Label *m_pLblMessage;

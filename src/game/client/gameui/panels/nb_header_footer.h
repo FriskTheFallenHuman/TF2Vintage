@@ -51,6 +51,7 @@ public:
 	IVideoMaterial* GetVideoMaterial()	{ return m_pVideoMaterial; }
 	void ClearCurrentMovie();
 	void SetEnabled( bool bEnabled ){ m_bEnabled = bEnabled; }
+	bool IsEnabled( void ){ return m_bEnabled; }
 private:
 	IVideoMaterial *m_pVideoMaterial;
 	BIKMaterial_t m_nBIKMaterial;

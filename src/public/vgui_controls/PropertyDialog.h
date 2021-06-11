@@ -76,6 +76,7 @@ private:
 	Button *_cancelButton;
 	Button *_applyButton;
 
+protected:
 	CPanelAnimationVar( int, m_iSheetInsetBottom, "sheetinset_bottom", "32" );
 };
 

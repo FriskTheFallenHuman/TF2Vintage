@@ -9,7 +9,9 @@
 #include "tf_controls.h"
 #include <filesystem.h>
 #include <vgui_controls/AnimationController.h>
+#ifndef GAMEUI_EMBEDDED
 #include "panels/tf_tooltippanel.h"
+#endif // GAMEUI_EMBEDDED
 #include "basemodelpanel.h"
 #include <vgui/ILocalize.h>
 
@@ -216,12 +218,15 @@ void CTFAdvButtonBase::SendAnimation(MouseState flag)
 	switch (flag)
 	{
 	case MOUSE_DEFAULT:
+#ifndef GAMEUI_EMBEDDED
 		if (pToolTip[0] != '\0')
 			MAINMENU_ROOT->HideToolTip();
+#endif // GAMEUI_EMBEDDED
 		if (m_bBorderVisible)
 			SetBorder(GETSCHEME()->GetBorder(pSelectedBG));
 		break;
 	case MOUSE_ENTERED:
+#ifndef GAMEUI_EMBEDDED
 		if (pToolTip[0] != '\0') {
 			wchar_t *pText = g_pVGuiLocalize->Find(pToolTip);
 			if (pText != NULL)
@@ -235,12 +240,15 @@ void CTFAdvButtonBase::SendAnimation(MouseState flag)
 				MAINMENU_ROOT->ShowToolTip(pToolTip);
 			}
 		}
+#endif // GAMEUI_EMBEDDED
 		if (m_bBorderVisible)
 			SetBorder(GETSCHEME()->GetBorder(pArmedBG));
 		break;
 	case MOUSE_EXITED:
+#ifndef GAMEUI_EMBEDDED
 		if (pToolTip[0] != '\0')
 			MAINMENU_ROOT->HideToolTip();
+#endif // GAMEUI_EMBEDDED
 		if (m_bBorderVisible)
 			SetBorder(GETSCHEME()->GetBorder(pSelectedBG));
 		break;

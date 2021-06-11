@@ -18,12 +18,14 @@
 #include "ixboxsystem.h"
 #include "igameevents.h"
 
+#include "MultiplayerAdvancedDialog.h"
 #include "OptionsDialog.h"
 #include "OptionsSubAudio.h"
 #include "PlayerListDialog.h"
 #include "CreateMultiplayerGameDialog.h"
 #include "AchievementsDialog.h"
 
+class CMultiplayerAdvancedDialog;
 class COptionsDialog;
 class CCreateMultiplayerGameDialog;
 class CAchievementsDialog;
@@ -79,7 +81,7 @@ namespace BaseModUI
 		CBaseModPanel();
 		~CBaseModPanel();
 
-    void	FireGameEvent( IGameEvent* event ) OVERRIDE;
+		void FireGameEvent( IGameEvent* event ) OVERRIDE;
 
 	public:
 		static CBaseModPanel& GetSingleton();
@@ -124,9 +126,13 @@ namespace BaseModUI
 		const char *GetUISoundName(  UISound_t uiSound );
 		void PlayUISound( UISound_t uiSound );
 
+		void SetServerlistSize( int size );
+		void UpdateServerInfo();
+
 		void SetLastActiveUserId( int userId );
 		int GetLastActiveUserId();
 
+		void OpenTFOptionsDialog( Panel *parent );
 		void OpenOptionsDialog( Panel *parent );
 		void OpenCreateMultiplayerGameDialog( Panel *parent );
 		void OpenAchievementsDialog( Panel *parent );
@@ -167,6 +173,7 @@ namespace BaseModUI
 		vgui::DHANDLE<COptionsDialog> m_hOptionsDialog;
 		vgui::DHANDLE<CCreateMultiplayerGameDialog> m_hCreateServerDialog;
 		vgui::DHANDLE<CAchievementsDialog> m_hAchievementsDialog;
+		vgui::DHANDLE<CMultiplayerAdvancedDialog> m_hMultiplayerAdvancedDialog;
 
 		vgui::HFont m_hDefaultFont;
 

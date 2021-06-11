@@ -36,6 +36,8 @@ public:
 	// Trap row selection message
 	MESSAGE_FUNC_INT( ItemSelected, "ItemSelected", itemID );
 
+	VControlsListPanel* GetControlsList( void ) { return m_pKeyBindList; }
+
 private:
 	void Finish( ButtonCode_t code );
 

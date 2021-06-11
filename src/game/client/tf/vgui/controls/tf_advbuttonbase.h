@@ -4,7 +4,9 @@
 #pragma once
 #endif
 
+#ifndef GAMEUI_EMBEDDED
 #include "tf_mainmenu.h"
+#endif // GAMEUI_EMBEDDED
 #include <vgui_controls/EditablePanel.h>
 #include "tf_imagepanel.h"
 #include "tf_controls.h"

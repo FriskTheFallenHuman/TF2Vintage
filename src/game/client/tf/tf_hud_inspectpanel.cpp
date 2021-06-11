@@ -12,7 +12,7 @@
 #include <vgui/IVGui.h>
 #include <vgui_controls/EditablePanel.h>
 #include "c_tf_player.h"
-#include "vgui/controls/tf_advmodelpanel.h"
+//#include "vgui/controls/tf_advmodelpanel.h"
 #include "view.h"
 #include "tf_hud_inspectpanel.h"
 
@@ -69,7 +69,7 @@ CHudInspectPanel::CHudInspectPanel( char const *pszElementName )
 	SetHiddenBits( HIDEHUD_MISCSTATUS );
 
 	// TODO: CItemModelPanel...
-	m_pItemPanel = new CTFAdvModelPanel( this, "itempanel" );
+	//m_pItemPanel = new CTFAdvModelPanel( this, "itempanel" );
 }
 
 //-----------------------------------------------------------------------------
@@ -127,11 +127,11 @@ void CHudInspectPanel::LockInspectRenderGroup( bool bLock )
 //-----------------------------------------------------------------------------
 void CHudInspectPanel::SetPanelVisible( bool bVisible )
 {
-	if ( m_pItemPanel->IsVisible() != bVisible )
+	/*if ( m_pItemPanel->IsVisible() != bVisible )
 	{
 		LockInspectRenderGroup( bVisible );
 		m_pItemPanel->SetVisible( bVisible );
-	}
+	}*/
 }
 
 //-----------------------------------------------------------------------------

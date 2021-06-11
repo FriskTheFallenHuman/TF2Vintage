@@ -13,6 +13,7 @@
 #include <vgui_controls/Label.h>
 #include <vgui_controls/ListPanel.h>
 #include <vgui_controls/QueryBox.h>
+#include "vgui_controls/ScrollBar.h"
 
 #include <vgui/Cursor.h>
 #include <vgui/IVGui.h>
@@ -36,29 +37,30 @@
 
 using namespace vgui;
 
-
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-COptionsSubKeyboard::COptionsSubKeyboard(vgui::Panel *parent) : PropertyPage(parent, NULL)
+COptionsSubKeyboard::COptionsSubKeyboard( vgui::Panel *parent ) : BaseClass( parent, NULL )
 {
-	memset( m_Bindings, 0, sizeof( m_Bindings ));
-    SetSize(0, 2);
+	memset( m_Bindings, 0, sizeof( m_Bindings ) );
+    SetSize( 0, 2 );
 
 	// create the key bindings list
 	CreateKeyBindingList();
+
 	// Store all current key bindings
 	SaveCurrentBindings();
+
 	// Parse default descriptions
 	ParseActionDescriptions();
 	
-	m_pSetBindingButton = new Button(this, "ChangeKeyButton", "");
-	m_pClearBindingButton = new Button(this, "ClearKeyButton", "");
+	m_pSetBindingButton = new Button( this, "ChangeKeyButton", "" );
+	m_pClearBindingButton = new Button( this, "ClearKeyButton", "" );
 
-	LoadControlSettings("Resource/OptionsSubKeyboard.res");
+	LoadControlSettings( "Resource/OptionsSubKeyboard.res" );
 
-	m_pSetBindingButton->SetEnabled(false);
-	m_pClearBindingButton->SetEnabled(false);
+	m_pSetBindingButton->SetEnabled( false );
+	m_pClearBindingButton->SetEnabled( false );
 	SetPaintBackgroundEnabled( false );
 }
 
@@ -77,10 +79,9 @@ void COptionsSubKeyboard::OnResetData()
 {
 	// Populate list based on current settings
 	FillInCurrentBindings();
+
 	if ( IsVisible() )
-	{
-		m_pKeyBindList->SetSelectedItem(0);
-	}
+		m_pKeyBindList->SetSelectedItem( 0 );
 }
 
 //-----------------------------------------------------------------------------
@@ -97,22 +98,19 @@ void COptionsSubKeyboard::OnApplyChanges()
 void COptionsSubKeyboard::CreateKeyBindingList()
 {
 	// Create the control
-	m_pKeyBindList = new VControlsListPanel(this, "listpanel_keybindlist");
+	m_pKeyBindList = new VControlsListPanel( this, "listpanel_keybindlist" );
+	m_pKeyBindList->GetScrollBar()->UseImages( "chalkboard_scroll_up", "chalkboard_scroll_down", "chalkboard_scroll_line", "chalkboard_scroll_box" );
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: binds double-clicking or hitting enter in the keybind list to changing the key
 //-----------------------------------------------------------------------------
-void COptionsSubKeyboard::OnKeyCodeTyped(vgui::KeyCode code)
+void COptionsSubKeyboard::OnKeyCodeTyped( vgui::KeyCode code )
 {
-	if (code == KEY_ENTER)
-	{
-		OnCommand("ChangeKey");
-	}
+	if ( code == KEY_ENTER )
+		OnCommand( "ChangeKey" );
 	else
-	{
-		BaseClass::OnKeyCodeTyped(code);
-	}
+		BaseClass::OnKeyCodeTyped( code );
 }
 
 //-----------------------------------------------------------------------------
@@ -123,12 +121,12 @@ void COptionsSubKeyboard::OnCommand( const char *command )
 	if ( !stricmp( command, "Defaults" )  )
 	{
 		// open a box asking if we want to restore defaults
-		QueryBox *box = new QueryBox("#GameUI_KeyboardSettings", "#GameUI_KeyboardSettingsText");
-		box->AddActionSignalTarget(this);
-		box->SetOKCommand(new KeyValues("Command", "command", "DefaultsOK"));
+		QueryBox *box = new QueryBox( "#GameUI_KeyboardSettings", "#GameUI_KeyboardSettingsText" );
+		box->AddActionSignalTarget( this );
+		box->SetOKCommand( new KeyValues( "Command", "command", "DefaultsOK" ) );
 		box->DoModal();
 	}
-	else if ( !stricmp(command, "DefaultsOK"))
+	else if ( !stricmp( command, "DefaultsOK" ) )
 	{
 		// Restore defaults from default keybindings file
 		FillInDefaultBindings();
@@ -136,14 +134,14 @@ void COptionsSubKeyboard::OnCommand( const char *command )
 	}
 	else if ( !m_pKeyBindList->IsCapturing() && !stricmp( command, "ChangeKey" ) )
 	{
-		m_pKeyBindList->StartCaptureMode(dc_blank);
+		m_pKeyBindList->StartCaptureMode( dc_blank );
 	}
 	else if ( !m_pKeyBindList->IsCapturing() && !stricmp( command, "ClearKey" ) )
 	{
-		OnKeyCodePressed(KEY_DELETE);
+		OnKeyCodePressed( KEY_DELETE );
         m_pKeyBindList->RequestFocus();
 	}
-	else if ( !stricmp(command, "Advanced") )
+	else if ( !stricmp(command, "Advanced" ) )
 	{
 		OpenKeyboardAdvancedDialog();
 	}
@@ -204,31 +202,29 @@ void COptionsSubKeyboard::ParseActionDescriptions( void )
 	char token[512];
 	while ( 1 )
 	{
-		data = UTIL_Parse( data, token, sizeof(token) );
+		data = UTIL_Parse( data, token, sizeof( token ) );
 		// Done.
 		if ( strlen( token ) <= 0 )  
 			break;
 
 		Q_strncpy( szBinding, token, sizeof( szBinding ) );
 
-		data = UTIL_Parse( data, token, sizeof(token) );
-		if ( strlen(token) <= 0 )
-		{
+		data = UTIL_Parse( data, token, sizeof( token ) );
+		if ( strlen( token ) <= 0 )
 			break;
-		}
 
-		Q_strncpy(szDescription, token, sizeof( szDescription ) );
+		Q_strncpy( szDescription, token, sizeof( szDescription ) );
 
 		// Skip '======' rows
 		if ( szDescription[ 0 ] != '=' )
 		{
 			// Flag as special header row if binding is "blank"
-			if (!stricmp(szBinding, "blank"))
+			if ( !stricmp( szBinding, "blank" ) )
 			{
 				// add header item
-				m_pKeyBindList->AddSection(++sectionIndex, szDescription);
-				m_pKeyBindList->AddColumnToSection(sectionIndex, "Action", szDescription, SectionedListPanel::COLUMN_BRIGHT, 286);
-				m_pKeyBindList->AddColumnToSection(sectionIndex, "Key", "#GameUI_KeyButton", SectionedListPanel::COLUMN_BRIGHT, 128);
+				m_pKeyBindList->AddSection( ++sectionIndex, szDescription );
+				m_pKeyBindList->AddColumnToSection( sectionIndex, "Action", szDescription, SectionedListPanel::COLUMN_BRIGHT, 286 );
+				m_pKeyBindList->AddColumnToSection( sectionIndex, "Key", "#GameUI_KeyButton", SectionedListPanel::COLUMN_BRIGHT, 128 );
 			}
 			else
 			{
@@ -236,12 +232,12 @@ void COptionsSubKeyboard::ParseActionDescriptions( void )
 				item = new KeyValues( "Item" );
 				
 				// fill in data
-				item->SetString("Action", szDescription);
-				item->SetString("Binding", szBinding);
-				item->SetString("Key", "");
+				item->SetString( "Action", szDescription );
+				item->SetString( "Binding", szBinding );
+				item->SetString( "Key", "" );
 
 				// Add to list
-				m_pKeyBindList->AddItem(sectionIndex, item);
+				m_pKeyBindList->AddItem( sectionIndex, item );
 				item->deleteThis();
 			}
 		}
@@ -255,22 +251,23 @@ void COptionsSubKeyboard::ParseActionDescriptions( void )
 //-----------------------------------------------------------------------------
 KeyValues *COptionsSubKeyboard::GetItemForBinding( const char *binding )
 {
-	static int bindingSymbol = KeyValuesSystem()->GetSymbolForString("Binding");
+	static int bindingSymbol = KeyValuesSystem()->GetSymbolForString( "Binding" );
 
 	// Loop through all items
-	for (int i = 0; i < m_pKeyBindList->GetItemCount(); i++)
+	for ( int i = 0; i < m_pKeyBindList->GetItemCount(); i++ )
 	{
-		KeyValues *item = m_pKeyBindList->GetItemData(m_pKeyBindList->GetItemIDFromRow(i));
+		KeyValues *item = m_pKeyBindList->GetItemData( m_pKeyBindList->GetItemIDFromRow( i ) );
 		if ( !item )
 			continue;
 
-		KeyValues *bindingItem = item->FindKey(bindingSymbol);
+		KeyValues *bindingItem = item->FindKey( bindingSymbol );
 		const char *bindString = bindingItem->GetString();
 
 		// Check the "Binding" key
-		if (!stricmp(bindString, binding))
+		if ( !stricmp( bindString, binding ) )
 			return item;
 	}
+
 	// Didn't find it
 	return NULL;
 }
@@ -295,18 +292,18 @@ void COptionsSubKeyboard::AddBinding( KeyValues *item, const char *keyname )
 	// Loop through all the key bindings and set all entries that have
 	// the same binding. This allows us to have multiple entries pointing 
 	// to the same binding.
-	for (int i = 0; i < m_pKeyBindList->GetItemCount(); i++)
+	for ( int i = 0; i < m_pKeyBindList->GetItemCount(); i++ )
 	{
-		KeyValues *curitem = m_pKeyBindList->GetItemData(m_pKeyBindList->GetItemIDFromRow(i));
+		KeyValues *curitem = m_pKeyBindList->GetItemData( m_pKeyBindList->GetItemIDFromRow( i ) );
 		if ( !curitem )
 			continue;
 
 		const char *curbinding = curitem->GetString( "Binding", "" );
 
-		if (!stricmp(curbinding, binding))
+		if ( !stricmp( curbinding, binding ) )
 		{
 			curitem->SetString( "Key", keyname );
-			m_pKeyBindList->InvalidateItem(i);
+			m_pKeyBindList->InvalidateItem( i );
 		}
 	}
 }
@@ -317,16 +314,16 @@ void COptionsSubKeyboard::AddBinding( KeyValues *item, const char *keyname )
 //-----------------------------------------------------------------------------
 void COptionsSubKeyboard::ClearBindItems( void )
 {
-	for (int i = 0; i < m_pKeyBindList->GetItemCount(); i++)
+	for ( int i = 0; i < m_pKeyBindList->GetItemCount(); i++ )
 	{
-		KeyValues *item = m_pKeyBindList->GetItemData(m_pKeyBindList->GetItemIDFromRow(i));
+		KeyValues *item = m_pKeyBindList->GetItemData( m_pKeyBindList->GetItemIDFromRow( i ) );
 		if ( !item )
 			continue;
 
 		// Reset keys
 		item->SetString( "Key", "" );
 
-		m_pKeyBindList->InvalidateItem(i);
+		m_pKeyBindList->InvalidateItem( i );
 	}
 
 	m_pKeyBindList->InvalidateLayout();
@@ -351,7 +348,7 @@ void COptionsSubKeyboard::RemoveKeyFromBindItems( KeyValues *org_item, const cha
 
 	for (int i = 0; i < m_pKeyBindList->GetItemCount(); i++)
 	{
-		KeyValues *item = m_pKeyBindList->GetItemData(m_pKeyBindList->GetItemIDFromRow(i));
+		KeyValues *item = m_pKeyBindList->GetItemData(m_pKeyBindList->GetItemIDFromRow( i ) );
 		if ( !item )
 			continue;
 
@@ -368,15 +365,13 @@ void COptionsSubKeyboard::RemoveKeyFromBindItems( KeyValues *org_item, const cha
 				const char *org_binding = org_item->GetString( "Binding", "" );
 				const char *binding = item->GetString( "Binding", "" );
 				if ( !stricmp( org_binding, binding ) )
-				{
 					bClearEntry = false;
-				}
 			}
 
 			if ( bClearEntry )
 			{
 				item->SetString( "Key", "" );
-				m_pKeyBindList->InvalidateItem(i);
+				m_pKeyBindList->InvalidateItem( i );
 			}
 		}
 	}
@@ -402,9 +397,7 @@ void COptionsSubKeyboard::FillInCurrentBindings( void )
 	bool bJoystick = false;
 	ConVarRef var( "joystick" );
 	if ( var.IsValid() )
-	{
 		bJoystick = var.GetBool();
-	}
 
 	for ( int i = 0; i < BUTTON_CODE_LAST; i++ )
 	{
@@ -481,13 +474,7 @@ void COptionsSubKeyboard::SaveCurrentBindings( void )
 //-----------------------------------------------------------------------------
 void COptionsSubKeyboard::BindKey( const char *key, const char *binding )
 {
-#ifndef _XBOX
 	engine->ClientCmd_Unrestricted( UTIL_va( "bind \"%s\" \"%s\"\n", key, binding ) );
-#else
-	char buff[256];
-	Q_snprintf(buff, sizeof(buff), "bind \"%s\" \"%s\"\n", key, binding);
-	engine->ClientCmd_Unrestricted(buff);
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -495,13 +482,7 @@ void COptionsSubKeyboard::BindKey( const char *key, const char *binding )
 //-----------------------------------------------------------------------------
 void COptionsSubKeyboard::UnbindKey( const char *key )
 {
-#ifndef _XBOX
 	engine->ClientCmd_Unrestricted( UTIL_va( "unbind \"%s\"\n", key ) );
-#else
-	char buff[256];
-	Q_snprintf(buff, sizeof(buff), "unbind \"%s\"\n", key);
-	engine->ClientCmd_Unrestricted(buff);
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -510,10 +491,9 @@ void COptionsSubKeyboard::UnbindKey( const char *key )
 void COptionsSubKeyboard::ApplyAllBindings( void )
 {
 	// unbind everything that the user unbound
-	{for (int i = 0; i < m_KeysToUnbind.Count(); i++)
-	{
+	for (int i = 0; i < m_KeysToUnbind.Count(); i++)
 		UnbindKey(m_KeysToUnbind[i].String());
-	}}
+
 	m_KeysToUnbind.RemoveAll();
 
 	// free binding memory
@@ -755,7 +735,6 @@ public:
 	COptionsSubKeyboardAdvancedDlg( vgui::VPANEL hParent ) : BaseClass( NULL, NULL )
 	{
 		// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
-
 		SetTitle("#GameUI_KeyboardAdvanced_Title", true);
 		SetSize( 280, 140 );
 		LoadControlSettings( "resource/OptionsSubKeyboardAdvancedDlg.res" );

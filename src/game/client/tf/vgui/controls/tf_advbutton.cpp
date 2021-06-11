@@ -10,7 +10,9 @@
 #include <filesystem.h>
 #include <vgui_controls/AnimationController.h>
 #include "basemodelpanel.h"
+#ifndef GAMEUI_EMBEDDED
 #include "panels/tf_dialogpanelbase.h"
+#endif // GAMEUI_EMBEDDED
 #include "inputsystem/iinputsystem.h"
 
 using namespace vgui;
@@ -19,6 +21,9 @@ using namespace vgui;
 #include "tier0/memdbgon.h"
 
 DECLARE_BUILD_FACTORY_DEFAULT_TEXT(CTFAdvButton, CTFAdvButtonBase);
+#ifdef GAMEUI_EMBEDDED
+DECLARE_BUILD_FACTORY_DEFAULT_TEXT(CTFMenuButton, CTFMenuButton);
+#endif // GAMEUI_EMBEDDED
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -102,7 +107,7 @@ void CTFAdvButton::PerformLayout()
 	pButtonImage->SetZPos(2);
 	pButtonImage->SetShouldScaleImage(m_bScaleImage);
 
-
+#ifndef GAMEUI_EMBEDDED
 	CTFDialogPanelBase *pParent = dynamic_cast<CTFDialogPanelBase*>(GetParent());
 	if (pParent)
 	{
@@ -122,6 +127,7 @@ void CTFAdvButton::PerformLayout()
 			}
 		}
 	}
+#endif // GAMEUI_EMBEDDED
 }
 
 void CTFAdvButton::SetText(const char *tokenName)
@@ -211,6 +217,28 @@ void CTFAdvButton::SendAnimation(MouseState flag)
 		break;
 	}
 }
+
+#ifdef GAMEUI_EMBEDDED
+//-----------------------------------------------------------------------------
+// Purpose: Constructor
+//-----------------------------------------------------------------------------
+CTFMenuButton::CTFMenuButton( Panel *parent, const char *panelName, const char *text, Panel *pActionSignalTarget, const char *pCmd ) 
+	: BaseClass( parent, panelName, text )
+{
+	if ( pActionSignalTarget && pCmd )
+	{
+		AddActionSignalTarget( pActionSignalTarget );
+		SetCommandString( pCmd );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Destructor
+//-----------------------------------------------------------------------------
+CTFMenuButton::~CTFMenuButton()
+{
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor

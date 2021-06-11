@@ -212,6 +212,7 @@ public:
 	FileCompletionMenu(Panel *parent, const char *panelName) : Menu(parent, panelName)
 	{
 	}
+	virtual ~FileCompletionMenu() {}
 
 	// override it so it doesn't request focus
 	virtual void SetVisible(bool state)
@@ -957,6 +958,7 @@ void FileOpenDialog::AddFilter( const char *filter, const char *filterName, bool
 	kv->SetString( "filter", filter );
 	kv->SetString( "filterinfo", pFilterInfo );
 	int itemID = m_pFileTypeCombo->AddItem(filterName, kv);
+	kv->deleteThis();
 	if ( bActive )
 	{
 		m_pFileTypeCombo->ActivateItem(itemID);

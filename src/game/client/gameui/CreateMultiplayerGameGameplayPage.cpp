@@ -5,51 +5,33 @@
 // $NoKeywords: $
 //=============================================================================//
 
-
 #include <stdio.h>
 #include <time.h>
-
 #include "CreateMultiplayerGameGameplayPage.h"
-
-using namespace vgui;
-
 #include <KeyValues.h>
 #include <vgui/ILocalize.h>
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/CheckButton.h>
 #include <vgui_controls/Label.h>
 #include <vgui_controls/TextEntry.h>
-
 #include "filesystem.h"
 #include "PanelListPanel.h"
-#include "scriptobject.h"
 #include <tier0/vcrmode.h>
-
 #include "ModInfo.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
+
+using namespace vgui;
 
 #define OPTIONS_DIR "cfg"
 #define DEFAULT_OPTIONS_FILE OPTIONS_DIR "/settings_default.scr"
 #define OPTIONS_FILE OPTIONS_DIR "/settings.scr"
 
 //-----------------------------------------------------------------------------
-// Purpose: class for loading/saving server config file
-//-----------------------------------------------------------------------------
-class CServerDescription : public CDescription
-{
-public:
-	CServerDescription( CPanelListPanel *panel );
-
-	void WriteScriptHeader( FileHandle_t fp );
-	void WriteFileHeader( FileHandle_t fp ); 
-};
-
-//-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CCreateMultiplayerGameGameplayPage::CCreateMultiplayerGameGameplayPage( vgui::Panel *parent, const char *name ) : PropertyPage( parent, name )
+CCreateMultiplayerGameGameplayPage::CCreateMultiplayerGameGameplayPage( vgui::Panel *parent, const char *name ) : BaseClass( parent, name )
 {
 	m_pOptionsList = new CPanelListPanel( this, "GameOptions" );
 
@@ -57,8 +39,6 @@ CCreateMultiplayerGameGameplayPage::CCreateMultiplayerGameGameplayPage( vgui::Pa
 	m_pDescription->InitFromFile( DEFAULT_OPTIONS_FILE );
 	m_pDescription->InitFromFile( OPTIONS_FILE );
 	m_pList = NULL;
-
-	LoadControlSettings( "Resource/CreateMultiplayerGameGameplayPage.res" );
 
 	LoadGameOptionsList();
 }
@@ -189,9 +169,16 @@ void CCreateMultiplayerGameGameplayPage::LoadGameOptionsList()
 	CheckButton *pBox;
 	TextEntry *pEdit;
 	ComboBox *pCombo;
+	Label *pLabel;
 	CScriptListItem *pListItem;
 
 	Panel *objParent = m_pOptionsList;
+
+	IScheme *pScheme = scheme()->GetIScheme( GetScheme() );
+	vgui::HFont hTextSmallestFont = pScheme->GetFont( "HudFontSmallestBold", true );
+	vgui::HFont hTextSmallFont = pScheme->GetFont( "HudFontSmallBold", true );
+	Color colorTanDark = pScheme->GetColor( "TanDark", Color( 0, 0, 0, 255 ) );
+	Color colorTanLight = pScheme->GetColor( "TanLight", Color( 255, 255, 255, 255 ) );
 
 	while ( pObj )
 	{
@@ -209,14 +196,25 @@ void CCreateMultiplayerGameGameplayPage::LoadGameOptionsList()
 		case O_BOOL:
 			pBox = new CheckButton( pCtrl, "DescCheckButton", pObj->prompt );
 			pBox->SetSelected( pObj->fdefValue != 0.0f ? true : false );
-			
 			pCtrl->pControl = (Panel *)pBox;
+			pBox->SetFont( hTextSmallestFont );
+			pBox->InvalidateLayout( true, true );
+			pBox->SetFgColor( colorTanDark );
+			pBox->SetDefaultColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetArmedColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetDepressedColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetSelectedColor( colorTanDark, pBox->GetBgColor() );
+			pBox->SetHighlightColor( colorTanDark );
+			pBox->GetCheckImage()->SetColor( colorTanDark );
 			break;
 		case O_STRING:
 		case O_NUMBER:
 			pEdit = new TextEntry( pCtrl, "DescEdit");
 			pEdit->InsertString(pObj->defValue);
 			pCtrl->pControl = (Panel *)pEdit;
+			pEdit->SetFont( hTextSmallestFont );
+			pEdit->InvalidateLayout( true, true );
+			pEdit->SetBgColor( Color(0,0,0,255) );
 			break;
 		case O_LIST:
 			pCombo = new ComboBox( pCtrl, "DescEdit", 5, false );
@@ -231,17 +229,37 @@ void CCreateMultiplayerGameGameplayPage::LoadGameOptionsList()
 			pCombo->ActivateItemByRow((int)pObj->fdefValue);
 
 			pCtrl->pControl = (Panel *)pCombo;
+			pCombo->SetFont( hTextSmallestFont );
+			break;
+		case O_CATEGORY:
+			pLabel = new Label(pCtrl, "DescTextTitle", pObj->prompt);
+			pCtrl->pControl = (Panel *)pLabel;
+			pCtrl->SetBorder( pScheme->GetBorder( "OptionsCategoryBorder" ) );
+			pLabel->SetFont( pScheme->GetFont( "MenuSmallFont", true ) );
 			break;
 		default:
 			break;
 		}
 
-		if ( pCtrl->type != O_BOOL )
+		if ( pCtrl->type != O_BOOL && pCtrl->type != O_CATEGORY )
 		{
 			pCtrl->pPrompt = new vgui::Label( pCtrl, "DescLabel", "" );
 			pCtrl->pPrompt->SetContentAlignment( vgui::Label::a_west );
 			pCtrl->pPrompt->SetTextInset( 5, 0 );
 			pCtrl->pPrompt->SetText( pObj->prompt );
+			pCtrl->pPrompt->SetFont( hTextSmallestFont );
+			pCtrl->pPrompt->InvalidateLayout( true, true );
+
+			// Stylish category section to match tf2 live panel
+			if ( pCtrl->type == O_CATEGORY )
+			{
+				pCtrl->pPrompt->SetFont( hTextSmallFont );
+				pCtrl->pPrompt->SetFgColor( colorTanLight );
+			}
+			else
+			{
+				pCtrl->pPrompt->SetFgColor( colorTanDark );
+			}
 		}
 
 		pCtrl->pScrObj = pObj;
@@ -384,6 +402,15 @@ void CCreateMultiplayerGameGameplayPage::GatherCurrentValues()
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CCreateMultiplayerGameGameplayPage::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/CreateMultiplayerGameGameplayPage.res" );
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor, load/save server settings object

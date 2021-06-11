@@ -28,6 +28,7 @@
 #include "vstdlib/IKeyValuesSystem.h"
 #include "tier1/utlsymbol.h"
 #include "vgui_controls/BuildGroup.h"
+#include "tier1/KeyValues.h"
 
 // undefine windows function macros that overlap 
 #ifdef PostMessage
@@ -139,7 +140,7 @@ class IForceVirtualInheritancePanel
 //			This is designed as an easy-access to the vgui-functionality; for more
 //			low-level access to vgui functions use the IPanel/IClientPanel interfaces directly
 //-----------------------------------------------------------------------------
-class Panel : public IClientPanel, virtual public IForceVirtualInheritancePanel
+class Panel : public IClientPanel, public virtual IForceVirtualInheritancePanel
 {
 	DECLARE_CLASS_SIMPLE_NOBASE( Panel );
 
@@ -342,6 +343,12 @@ public:
 	virtual bool IsOpaque();
 	bool IsRightAligned();		// returns true if the settings are aligned to the right of the screen
 	bool IsBottomAligned();		// returns true if the settings are aligned to the bottom of the screen
+
+	// Override to change how build mode is activated
+	void ActivateBuildMode();
+
+	// Return the buildgroup that this panel is part of.
+	BuildGroup *GetBuildGroup();
 
 	// scheme access functions
 	virtual HScheme GetScheme();
@@ -861,7 +868,7 @@ private:
 	Color			_fgColor;		// foreground color
 	Color			_bgColor;		// background color
 
-	HBuildGroup		_buildGroup;
+	HBuildGroup		_buildGroupHandle;
 
 	short			m_nPinDeltaX;		// Relative position of the pinned corner to the edge
 	short			m_nPinDeltaY;
@@ -948,6 +955,8 @@ private:
 
 	// obselete, remove soon
 	void OnOldMessage(KeyValues *params, VPANEL ifromPanel);
+
+	BuildGroup *_buildGroup;
 };
 
 inline void Panel::DisableMouseInputForThisPanel( bool bDisable )

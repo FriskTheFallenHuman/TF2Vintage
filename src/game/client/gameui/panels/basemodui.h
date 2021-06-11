@@ -12,7 +12,6 @@
 
 #include "basemodpanel.h"
 #include "basemodframe.h"
-#include "uigamedata.h"
 #include "GameUI_Interface.h"
 #include "const.h"
 

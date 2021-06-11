@@ -10,7 +10,7 @@
 	nohimodel 		1
 	nocrosshair 	0
 	advcrosshair 	1
-	nodegraph		0
+	nodegraph		1
 	supportsvr 		0
 	supportsDX8 	0
 	GameData	"tf2v.fgd"

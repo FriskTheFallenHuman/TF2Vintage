@@ -34,7 +34,6 @@
 
 // BaseModUI High-level windows
 #include "vgenericconfirmation.h"
-#include "vingamemainmenu.h"
 #include "vloadingprogress.h"
 #include "vmainmenu.h"
 #include "nb_header_footer.h"
@@ -82,10 +81,8 @@ CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
 
 	MakePopup( false );
 
-	Assert(m_CFactoryBasePanel == 0);
+	Assert( m_CFactoryBasePanel == 0 );
 	m_CFactoryBasePanel = this;
-
-	g_pVGuiLocalize->AddFile( "Resource/basemodui_%language%.txt" );
 
 	m_LevelLoading = false;
 	
@@ -98,7 +95,7 @@ CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
 	// needed to allow engine to exec startup commands (background map signal is 1 frame behind) 
 	m_DelayActivation = 3;
 
-	m_UIScheme = vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/MenuScheme.res", "MenuScheme" );
+	m_UIScheme = vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" );
 	SetScheme( m_UIScheme );
 
 	// Only one user on the PC, so set it now
@@ -128,6 +125,8 @@ CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
 	// Listen for game events
 	if ( gameeventmanager )
 		gameeventmanager->AddListener( this, "server_spawn", false );
+
+	vgui::ivgui()->AddTickSignal( GetVPanel(), 50 );
 }
 
 //=============================================================================
@@ -141,8 +140,7 @@ CBaseModPanel::~CBaseModPanel()
 	surface()->DestroyTextureID( m_iBackgroundImageID );
 	surface()->DestroyTextureID( m_iProductImageID );
 
-	// Shutdown UI game data
-	CUIGameData::Shutdown();
+	vgui::ivgui()->RemoveTickSignal( GetVPanel() );
 }
 
 //=============================================================================
@@ -453,12 +451,7 @@ void CBaseModPanel::CloseAllWindows( int ePolicyFlags )
 	CAutoPushPop< bool > auto_m_bClosingAllWindows( m_bClosingAllWindows, true );
 
 	if ( UI_IsDebug() )
-	{
 		ConColorMsg( Color( 77, 116, 85, 255 ),  "[GAMEUI] CBaseModPanel::CloseAllWindows( 0x%x )\n", ePolicyFlags );
-	}
-
-	// make sure we also close any active flyout menus that might be hanging out.
-	FlyoutMenu::CloseActiveMenu();
 
 	for (int i = 0; i < WT_WINDOW_COUNT; ++i)
 	{
@@ -604,11 +597,11 @@ void CBaseModPanel::OnGameUIHidden()
 		PostMessage( pInGameMainMenu, new KeyValues( "GameUIHidden" ) );
 	}
 
-	// Close achievements
-	/*if ( CBaseModFrame *pFrame = GetWindow( WT_ACHIEVEMENTS ) )
+	// Notify the achievements dialog that game UI is closing
+	if ( m_hAchievementsDialog.Get() )
 	{
-		pFrame->Close();
-	}*/
+		PostMessage( m_hAchievementsDialog.Get(), new KeyValues( "GameUIHidden" ) );
+	}
 }
 
 void CBaseModPanel::OpenFrontScreen()
@@ -638,8 +631,6 @@ void CBaseModPanel::RunFrame()
 	GetAnimationController()->UpdateAnimations( Plat_FloatTime() );
 
 	CBaseModFrame::RunFrameOnListeners();
-
-	CUIGameData::Get()->RunFrame();
 
 	if ( m_DelayActivation )
 	{
@@ -855,6 +846,21 @@ int CBaseModPanel::GetLastActiveUserId( )
 }
 
 //=============================================================================
+void CBaseModPanel::SetServerlistSize( int size )
+{
+	MainMenu *pMainMenu = static_cast<MainMenu*>( GetWindow( WT_MAINMENU ) );
+	if ( pMainMenu )
+		pMainMenu->SetServerlistSize( size );
+}
+//=============================================================================
+void CBaseModPanel::UpdateServerInfo()
+{
+	MainMenu *pMainMenu = static_cast<MainMenu*>( GetWindow( WT_MAINMENU ) );
+	if ( pMainMenu )
+		pMainMenu->UpdateServerInfo();
+}
+
+//=============================================================================
 void CBaseModPanel::OpenPlayerListDialog( Panel *parent )
 {
 	CPlayerListDialog *plist = new CPlayerListDialog( this );
@@ -882,6 +888,21 @@ void CBaseModPanel::OpenOptionsDialog( Panel *parent )
 	x -= options->GetWide() / 2;
 	y -= options->GetTall() / 2;
 	options->SetPos(x, y);
+}
+
+//=============================================================================
+void CBaseModPanel::OpenTFOptionsDialog( Panel *parent )
+{
+	CMultiplayerAdvancedDialog *tf_options = new CMultiplayerAdvancedDialog( this );
+	tf_options->Activate();
+
+	//Put this thing in the middle of the screen
+	int x, y;
+	x = GetWide() / 2;
+	y = GetTall() / 2;
+	x -= tf_options->GetWide() / 2;
+	y -= tf_options->GetTall() / 2;
+	tf_options->SetPos(x, y);
 }
 
 //=============================================================================
@@ -1402,7 +1423,7 @@ void CBaseModPanel::PlayGameStartupSound()
 	Q_snprintf( path, sizeof( path ), "sound/ui/gamestartup*.mp3" );
 	Q_FixSlashes( path );
 
-	char const *fn = g_pFullFileSystem->FindFirstEx( path, "MOD", &fh );
+	char const *fn = g_pFullFileSystem->FindFirstEx( path, "GAME", &fh );
 	if ( fn )
 	{
 		do
@@ -1451,12 +1472,12 @@ void CBaseModPanel::OnSetFocus()
 {
 	BaseClass::OnSetFocus();
 
-	//GameConsole().Hide();
+	GameConsole().Hide();
 }
 
 void CBaseModPanel::OnMovedPopupToFront()
 {
-	//GameConsole().Hide();
+	GameConsole().Hide();
 }
 
 void CBaseModPanel::SafeNavigateTo( Panel *pExpectedFrom, Panel *pDesiredTo, bool bAllowStealFocus )

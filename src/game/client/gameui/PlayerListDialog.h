@@ -11,14 +11,14 @@
 #pragma once
 #endif
 
-#include <vgui_controls/Frame.h>
+#include <vgui_controls/PropertyDialog.h>
 
 //-----------------------------------------------------------------------------
 // Purpose: List of players, their ingame-name and their friends-name
 //-----------------------------------------------------------------------------
-class CPlayerListDialog : public vgui::Frame
+class CPlayerListDialog : public vgui::PropertyDialog
 {
-	DECLARE_CLASS_SIMPLE( CPlayerListDialog, vgui::Frame ); 
+	DECLARE_CLASS_SIMPLE( CPlayerListDialog, vgui::PropertyDialog ); 
 
 public:
 	CPlayerListDialog(vgui::Panel *parent);

@@ -73,6 +73,7 @@ CPanelListPanel::CPanelListPanel( vgui::Panel *parent, char const *panelName, bo
 	_vbar->SetBounds( 0, 0, 20, 20 );
 	_vbar->SetVisible(false);
 	_vbar->AddActionSignalTarget( this );
+	_vbar->UseImages( "chalkboard_scroll_up", "chalkboard_scroll_down", "chalkboard_scroll_line", "chalkboard_scroll_box" );
 
 	_embedded = new Panel( this, "PanelListEmbedded" );
 	_embedded->SetBounds( 0, 0, 20, 20 );

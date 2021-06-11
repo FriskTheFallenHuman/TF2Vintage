@@ -82,11 +82,11 @@ public:
 #ifdef TF_VINTAGE_CLIENT
 	struct PublicValue_t
 	{
-		PublicValue_t(float _a = 0.0f, float _b = 0.0f, float _c = 0.0f, float _d = 0.0f) :
+		PublicValue_t( float _a = 0.0f, float _b = 0.0f, float _c = 0.0f, float _d = 0.0f ) :
 			a(_a), b(_b), c(_c), d(_d) {};
 		float a, b, c, d;
 	};
-	void RunAnimationCommand(vgui::Panel *panel, const char *variable, PublicValue_t targetValue, float startDelaySeconds, float duration, Interpolators_e interpolator, float animParameter)
+	void RunAnimationCommand( vgui::Panel *panel, const char *variable, PublicValue_t targetValue, float startDelaySeconds, float duration, Interpolators_e interpolator, float animParameter )
 	{
 		// clear any previous animations of this variable
 		UtlSymId_t var = g_ScriptSymbols.AddString(variable);
@@ -110,7 +110,6 @@ public:
 		StartCmd_Animate(panel, 0, animateCmd);
 	}
 #endif
- 
 
 private:
 	bool UpdateScreenSize();

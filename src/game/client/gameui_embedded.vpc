@@ -11,6 +11,7 @@ $Configuration
 	$Compiler
 	{
 		$AdditionalIncludeDirectories	"$BASE;.\gameui;.\gameui\panels"
+		$AdditionalIncludeDirectories	"$BASE;.\tf\vgui"	[$TF2VINTAGE]
 		$PreprocessorDefinitions		"$BASE;GAMEUI_EXPORTS;GAMEUI_EMBEDDED;GAMEUI_DLL"
 	}
 }
@@ -24,7 +25,6 @@ $Project
 			$Folder	"Base GameUI"
 			{
 				$File	"vgui_video_player.cpp"
-				$File	"gameui\LoadingTipPanel.cpp"
 
 				$File	"gameui\AchievementsDialog.cpp" \
 						"gameui\BitmapImagePanel.cpp" \
@@ -33,7 +33,6 @@ $Project
 						"gameui\CvarSlider.cpp" \
 						"gameui\CvarTextEntry.cpp" \
 						"gameui\CvarToggleCheckButton.cpp" \
-						"gameui\CreateMultiplayerGameBotPage.cpp" \
 						"gameui\CreateMultiplayerGameDialog.cpp" \
 						"gameui\CreateMultiplayerGameGameplayPage.cpp" \
 						"gameui\CreateMultiplayerGameServerPage.cpp" \
@@ -82,27 +81,47 @@ $Project
 			{
 				$File	"gameui\panels\basemodframe.cpp"
 				$File	"gameui\panels\basemodpanel.cpp"
-				$File	"gameui\panels\uigamedata.cpp"
 				$File	"gameui\panels\ui_defines.h"
 
 				$Folder	"VPanels"
 				{
-					$File	"gameui\panels\vdropdownmenu.cpp" \
-							"gameui\panels\vflyoutmenu.cpp" \
-							"gameui\panels\vgenericconfirmation.cpp" \
-							"gameui\panels\vgenericpanellist.cpp" \
-							"gameui\panels\vhybridbutton.cpp" \
-							"gameui\panels\vingamemainmenu.cpp" \
+					$File	"gameui\panels\vgenericconfirmation.cpp" \
 							"gameui\panels\vloadingprogress.cpp" \
-							"gameui\panels\vmainmenu.cpp" \
-							"gameui\panels\vmenubackground.cpp" \
-							"gameui\panels\vslidercontrol.cpp"
+							"gameui\panels\vmainmenu.cpp"
 				}
 				
 				$Folder	"Buttons"
 				{
 					$File	"gameui\panels\nb_header_footer.cpp"
 				}
+				
+				$Folder	"Controls"	[$TF2VINTAGE]
+				{
+					$File	"tf\vgui\controls\tf_advbutton.cpp"
+					$File	"tf\vgui\controls\tf_advbutton.h"
+					$File	"tf\vgui\controls\tf_advbuttonbase.cpp"
+					$File	"tf\vgui\controls\tf_advbuttonbase.h"
+					$File	"tf\vgui\controls\tf_advcheckbutton.cpp"
+					$File	"tf\vgui\controls\tf_advcheckbutton.h"
+					$File	"tf\vgui\controls\tf_advitembutton.cpp"
+					$File	"tf\vgui\controls\tf_advitembutton.h"
+					$File	"tf\vgui\controls\tf_advmodelpanel.cpp"
+					$File	"tf\vgui\controls\tf_advmodelpanel.h"
+					$File	"tf\vgui\controls\tf_advslider.cpp"
+					$File	"tf\vgui\controls\tf_advslider.h"
+					$File	"tf\vgui\controls\tf_advtabs.cpp"
+					$File	"tf\vgui\controls\tf_advtabs.h"
+					//$File	"tf\vgui\controls\tf_cvarcombobox.cpp"
+					//$File	"tf\vgui\controls\tf_cvarcombobox.h"
+					//$File	"tf\vgui\controls\tf_cvarslider.cpp"
+					//$File	"tf\vgui\controls\tf_cvarslider.h"
+					//$File	"tf\vgui\controls\tf_cvartextentry.cpp"
+					//$File	"tf\vgui\controls\tf_cvartextentry.h"
+					//$File	"tf\vgui\controls\tf_cvartogglecheckbutton.cpp"
+					//$File	"tf\vgui\controls\tf_cvartogglecheckbutton.h"
+					$File	"tf\vgui\controls\tf_rotatingpanel.cpp"
+					$File	"tf\vgui\controls\tf_rotatingpanel.h"
+				}	
 			}
 		}
 	}

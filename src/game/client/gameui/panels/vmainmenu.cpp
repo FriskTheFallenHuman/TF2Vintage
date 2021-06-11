@@ -7,31 +7,37 @@
 #include "cbase.h"
 #include "vmainmenu.h"
 #include "EngineInterface.h"
-#include "vhybridbutton.h"
-#include "vflyoutmenu.h"
 #include "vgenericconfirmation.h"
 #include "basemodpanel.h"
-#include "uigamedata.h"
 
 #include "vgui/ILocalize.h"
+#include "vgui/IInput.h"
+#include "vgui/ISurface.h"
 #include "vgui_controls/Label.h"
 #include "vgui_controls/Button.h"
 #include "vgui_controls/Tooltip.h"
 #include "vgui_controls/ImagePanel.h"
 #include "vgui_controls/Image.h"
+#include "vgui_controls/SectionedListPanel.h"
+#include "vgui_controls/ScalableImagePanel.h"
+#include "vgui_avatarimage.h"
 
 #include "materialsystem/materialsystem_config.h"
 
 #include "ienginevgui.h"
 #include "basepanel.h"
-#include "vgui/ISurface.h"
 #include "tier0/icommandline.h"
 #include "fmtstr.h"
 
 #include "FileSystem.h"
 #include "GameUI_Interface.h"
-
+#include "IGameUIFuncs.h"
 #include "time.h"
+
+#include "tf_controls.h"
+#include "tf_gamerules.h"
+#include "tf_notificationmanager.h"
+#include "nb_header_footer.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -49,11 +55,19 @@ MainMenu::MainMenu( Panel *parent, const char *panelName ):	BaseClass( parent, p
 
 	SetLowerGarnishEnabled( true );
 
-	m_pLogoImage = NULL;
-
 	AddFrameListener( this );
 
 	SetDeleteSelfOnClose( true );
+
+	if ( steamapicontext->SteamUser() )
+		m_SteamID = steamapicontext->SteamUser()->GetSteamID();
+
+	m_pBackgroundImage = new ScalableImagePanel( this, "Background" );
+
+	m_pServerlistPanel = new CServerlistPanel( this, "ServerlistPanel" );
+	m_pServerlistPanel->AddActionSignalTarget( this );
+
+	vgui::input()->RegisterKeyCodeUnhandledListener( GetVPanel() );
 }
 
 //=============================================================================
@@ -68,7 +82,6 @@ void MainMenu::OnCommand( const char *command )
 	if ( UI_IsDebug() )
 		ConColorMsg( Color( 77, 116, 85, 255 ), "[GAMEUI] Handling main menu command %s\n", command );
 
-	bool bOpeningFlyout = false;
 	bool bMpOnly = GameUI().IsInMultiplayer();
 
 	if ( bMpOnly && !Q_strcmp( command, "ReturnToGame" ) )
@@ -81,8 +94,8 @@ void MainMenu::OnCommand( const char *command )
 	}
 	else if( bMpOnly && !Q_strcmp( command, "ExitToMainMenu" ) )
 	{
-		MakeGenericDialog( "#GameUI_Disconnect", 
-						   "#GameUI_DisconnectConfirmationText", 
+		MakeGenericDialog( "#TF_MM_Disconnect_Title", 
+						   "#TF_MM_Disconnect", 
 						   true, 
 						   &LeaveGameOkCallback,
 						   true,
@@ -90,8 +103,8 @@ void MainMenu::OnCommand( const char *command )
 	}
 	else if ( !Q_strcmp( command, "QuitGame" ) )
 	{
-		MakeGenericDialog( "#GameUI_QuitConfirmationTitle", 
-						   "#GameUI_QuitConfirmationText", 
+		MakeGenericDialog( "#MMenu_PromptQuit_Title", 
+						   "#MMenu_PromptQuit_Body", 
 						   true, 
 						   &AcceptQuitGameCallback, 
 						   true,
@@ -104,6 +117,10 @@ void MainMenu::OnCommand( const char *command )
 	else if ( !Q_strcmp( command, "GameOptions" ) )
 	{
 		CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
+	}
+	else if ( !Q_strcmp( command, "TF2Options" ) )
+	{
+		CBaseModPanel::GetSingleton().OpenTFOptionsDialog( this );
 	}
 	else if ( !Q_strcmp( command, "ServerBrowser" ) )
 	{
@@ -129,47 +146,36 @@ void MainMenu::OnCommand( const char *command )
 	}
 	else if ( Q_stristr( command, "steam " ) )
 	{
-		const char *SteamUrl = strstr( command, "steam " ) + strlen( "steam " );
-		if ( strlen( SteamUrl ) > 0 )
-			steamapicontext->SteamFriends()->ActivateGameOverlay( const_cast<char *>( SteamUrl ) );
+		const char *SteamDialogUrl = strstr( command, "steam " ) + strlen( "steam " );
+		if ( strlen( SteamDialogUrl ) > 0 )
+		{
+			if ( steamapicontext && steamapicontext->SteamFriends() )
+				steamapicontext->SteamFriends()->ActivateGameOverlay( const_cast<char *>( SteamDialogUrl ) );
+		}
+	}
+	else if ( Q_stristr( command, "website " ) )
+	{
+		const char *WebsiteUrl = strstr( command, "website " ) + strlen( "website " );
+		if ( strlen( WebsiteUrl ) > 0 )
+		{
+			if ( steamapicontext && steamapicontext->SteamFriends() )
+				steamapicontext->SteamFriends()->ActivateGameOverlayToWebPage( const_cast<char *>( WebsiteUrl ) );
+		}
 	}
 	else
 	{
-		// does this command match a flyout menu?
-		BaseModUI::FlyoutMenu *flyout = dynamic_cast< FlyoutMenu* >( FindChildByName( command ) );
-		if ( flyout )
-		{
-			bOpeningFlyout = true;
-
-			// If so, enumerate the buttons on the menu and find the button that issues this command.
-			// (No other way to determine which button got pressed; no notion of "current" button on PC.)
-			for ( int iChild = 0; iChild < GetChildCount(); iChild++ )
-			{
-				bool bFound = false;
-
-				if ( !bFound )
-				{
-					BaseModHybridButton *hybrid = dynamic_cast<BaseModHybridButton *>( GetChild( iChild ) );
-					if ( hybrid && hybrid->GetCommand() && !Q_strcmp( hybrid->GetCommand()->GetString( "command" ), command ) )
-					{
-						hybrid->NavigateFrom();
-						// open the menu next to the button that got clicked
-						flyout->OpenMenu( hybrid );
-						flyout->SetListener( this );
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			BaseClass::OnCommand( command );
-		}
+		BaseClass::OnCommand( command );
 	}
-
-	if( !bOpeningFlyout )
-		FlyoutMenu::CloseActiveMenu(); //due to unpredictability of mouse navigation over keyboard, we should just close any flyouts that may still be open anywhere.
 }
+
+//=============================================================================
+void MainMenu::OnKeyCodeUnhandled( int code )
+{
+    const char *binding = gameuifuncs->GetBindingForButtonCode( static_cast<ButtonCode_t>( code ) );
+
+    if ( binding && ( FStrEq( binding, "toggleconsole" ) || FStrEq( binding, "showconsole" ) ) )
+        engine->ClientCmd_Unrestricted( binding );
+} 
 
 //=============================================================================
 void MainMenu::OnKeyCodePressed( KeyCode code )
@@ -245,6 +251,21 @@ void MainMenu::OnClose()
 void MainMenu::PerformLayout( void )
 {
 	BaseClass::PerformLayout();
+
+	CAvatarImagePanel *m_pProfileAvatar = dynamic_cast< CAvatarImagePanel *>( FindChildByName( "AvatarImage" ) );
+	if ( m_pProfileAvatar )
+	{
+		m_pProfileAvatar->SetPlayer( m_SteamID, k_EAvatarSize64x64 );
+		m_pProfileAvatar->SetShouldDrawFriendIcon( false );
+	}
+
+	char szNickName[64];
+	V_strcpy_safe( szNickName, ( steamapicontext->SteamFriends() ) ? steamapicontext->SteamFriends()->GetPersonaName() : "Unknown" );
+	SetDialogVariable( "playername", szNickName );
+
+	// if we had any current movie background playing, hidde the fake background
+	if ( BackgroundMovie() )
+		m_pBackgroundImage->SetVisible( false );
 }
 
 //=============================================================================
@@ -259,22 +280,6 @@ void MainMenu::OnGameUIHidden()
 }
 
 //=============================================================================
-void MainMenu::PaintBackground() 
-{
-	vgui::Panel *m_pFooter = FindChildByName( "PnlBackground" );
-	if ( m_pFooter )
-	{
-		int screenWidth, screenHeight;
-		CBaseModPanel::GetSingleton().GetSize( screenWidth, screenHeight );
-
-		int x, y, wide, tall;
-		m_pFooter->GetBounds( x, y, wide, tall );
-		surface()->DrawSetColor( m_pFooter->GetBgColor() );
-		surface()->DrawFilledRect( 0, y, x+screenWidth, y+tall );	
-	}
-}
-
-//=============================================================================
 void MainMenu::RunFrame()
 {
 	BaseClass::RunFrame();
@@ -285,9 +290,100 @@ void MainMenu::ApplySchemeSettings( IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings( pScheme );
 
-	m_pLogoImage = dynamic_cast< vgui::ImagePanel* >( FindChildByName( "GameLogo" ) );
+	bool bMpOnly = GameUI().IsInLevel();
 
-	LoadControlSettings( "Resource/UI/BaseModUI/MainMenu.res" );
+	// Setup the conditions
+	KeyValues *pConditions = NULL;
+	bool bIsHolidayOn = false;
+	const char *pszHolidayString = UTIL_GetActiveHolidayString();
+
+	// Make sure it is valid
+	if ( pszHolidayString && pszHolidayString[0] )
+	{
+		pConditions = new KeyValues( "condictions" );
+
+		char szConditionName[MAX_MAP_NAME]; // Use "MAX_MAP_NAME" to ensure we, at least we don't hit the limit
+		V_snprintf( szConditionName, sizeof( szConditionName ), "if_%s", pszHolidayString ); // Construct the condition
+		AddSubKeyNamed( pConditions, szConditionName );
+		int nHolidayBg; // Some holidays would had more than one background
+
+		// Special cases for Halloween, Xmas, MyM and Jungle Inferno
+		if ( FStrEq( pszHolidayString, "halloween" ) )
+		{
+			nHolidayBg = RandomInt( 0, 6 ); // TF2 Had 6 halloween background across all time
+			AddSubKeyNamed( pConditions, CFmtStr( "if_halloween_%d", nHolidayBg ) );
+		}
+		else if ( FStrEq( pszHolidayString, "christmas" ) )
+		{
+			nHolidayBg = RandomInt( 0, 1 ); // TF2 Had 2 xmas background across all time
+			AddSubKeyNamed( pConditions, CFmtStr( "if_christmas_%d", nHolidayBg ) );		
+		}
+
+		bIsHolidayOn = true;
+	}
+
+	// Aparrently this was used for updates?, Confirm it.
+	if ( !bIsHolidayOn )
+	{
+		if ( !pConditions )
+			pConditions = new KeyValues( "condictions" );
+
+		AddSubKeyNamed( pConditions, "if_operation" );
+	}
+
+	if ( !pConditions )
+		pConditions = new KeyValues( "condictions" );
+
+	// Setup the resolution, this is used by tf2 for stuffs like background images
+	float fCurrentAspectRation = engine->GetScreenAspectRatio();
+	AddSubKeyNamed( pConditions, fCurrentAspectRation >= 1.6 ? "if_wider" : "if_taller" );
+
+	LoadControlSettings( "resource/UI/BaseModUI/MainMenu.res", NULL, NULL, pConditions );
+
+	if ( pConditions )
+		pConditions->deleteThis();
+
+	CTFAdvButton *m_pQuitDisconnect = dynamic_cast< CTFAdvButton *>( FindChildByName( "QuitDisconnect" ) );
+	if ( m_pQuitDisconnect )
+	{
+		m_pQuitDisconnect->SetCommandString( bMpOnly ? "ExitToMainMenu" : "QuitGame" );
+		m_pQuitDisconnect->SetText( bMpOnly ? "#GameUI_GameMenu_Disconnect" : "#GameUI_GameMenu_Quit" );
+		m_pQuitDisconnect->SetImage( bMpOnly ? "../vgui/glyph_disconnect" : "../vgui/glyph_quit" );
+	}
+
+	CTFAdvButton *m_pMute = dynamic_cast< CTFAdvButton *>( FindChildByName( "Mute" ) );
+	if ( m_pMute )
+		m_pMute->SetVisible( bMpOnly ? true : false );
+
+	CTFAdvButton *m_pVote = dynamic_cast< CTFAdvButton *>( FindChildByName( "CallVote" ) );
+	if ( m_pVote )
+		m_pVote->SetVisible( bMpOnly ? true : false );
+
+	CExLabel *m_pVersionLabel = dynamic_cast<CExLabel *>( FindChildByName( "VersionLabel" ) );
+	if ( m_pVersionLabel )
+	{
+		char verString[64];
+		Q_snprintf( verString, sizeof( verString ), "Version: %s", GetNotificationManager()->GetVersionString() );
+		m_pVersionLabel->SetText( verString );
+	}
+
+	// if we are currently in-game hide us
+	if ( bMpOnly )
+		m_pBackgroundImage->SetVisible( false );
+}
+
+//=============================================================================
+void MainMenu::SetServerlistSize( int size )
+{
+	if ( m_pServerlistPanel )
+		m_pServerlistPanel->SetServerlistSize( size );
+}
+
+//=============================================================================
+void MainMenu::UpdateServerInfo()
+{
+	if ( m_pServerlistPanel )
+		m_pServerlistPanel->UpdateServerInfo();
 }
 
 //=============================================================================
@@ -316,4 +412,223 @@ void MainMenu::LeaveGameOkCallback()
 
 	CBaseModPanel::GetSingleton().CloseAllWindows();
 	CBaseModPanel::GetSingleton().OpenFrontScreen();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Constructor
+//-----------------------------------------------------------------------------
+CServerlistPanel::CServerlistPanel( vgui::Panel* parent, const char *panelName ) : BaseClass( parent, panelName )
+{
+	m_iSize = 0;
+	m_pServerList = new vgui::SectionedListPanel( this, "ServerList" );
+	m_pConnectButton = new CTFAdvButton( this, "ConnectButton", "Connect" );
+	m_pListSlider = new CTFAdvSlider( this, "ListSlider", "" );
+
+	vgui::ivgui()->AddTickSignal( GetVPanel(), 1000 );	// used to bring us back from invisible
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Destructor
+//-----------------------------------------------------------------------------
+CServerlistPanel::~CServerlistPanel()
+{
+}
+
+void CServerlistPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	m_pServerList->RemoveAll();
+	m_pServerList->RemoveAllSections();
+	m_pServerList->SetSectionFgColor( 0, Color( 255, 255, 255, 255 ) );
+	m_pServerList->SetBgColor( Color( 0, 0, 0, 0 ) );
+	m_pServerList->SetBorder( NULL );
+	m_pServerList->AddSection( 0, "Servers", ServerSortFunc );
+	m_pServerList->AddColumnToSection( 0, "Name", "Servers", SectionedListPanel::COLUMN_BRIGHT, m_iServerWidth );
+	m_pServerList->AddColumnToSection( 0, "Players", "Players", SectionedListPanel::COLUMN_BRIGHT, m_iPlayersWidth );
+	m_pServerList->AddColumnToSection( 0, "Ping", "Ping", SectionedListPanel::COLUMN_BRIGHT, m_iPingWidth );
+	m_pServerList->AddColumnToSection( 0, "Map", "Map", SectionedListPanel::COLUMN_BRIGHT, m_iMapWidth );
+	m_pServerList->SetSectionAlwaysVisible( 0, true );
+	m_pServerList->GetScrollBar()->UseImages( "", "", "", "" ); //hack to hide the scrollbar
+
+	m_pConnectButton->SetVisible( false );
+	UpdateServerInfo();
+}
+
+void CServerlistPanel::PerformLayout()
+{
+	BaseClass::PerformLayout();
+}
+
+void CServerlistPanel::OnThink()
+{
+	m_pServerList->ClearSelection();
+	m_pListSlider->SetVisible( false );
+	m_pConnectButton->SetVisible( false );
+
+	if ( !IsCursorOver() )
+		return;
+
+	m_pListSlider->SetValue( m_pServerList->GetScrollBar()->GetValue() );
+
+	for ( int i = 0; i < m_pServerList->GetItemCount(); i++ )
+	{
+		int _x, _y;
+		m_pServerList->GetPos( _x, _y );
+		int x, y, wide, tall;
+		m_pServerList->GetItemBounds( i, x, y, wide, tall );
+		int cx, cy;
+		surface()->SurfaceGetCursorPos( cx, cy );
+		m_pServerList->ScreenToLocal( cx, cy );
+
+		if ( cx > x && cx < x + wide && cy > y && cy < y + tall )
+		{
+			m_pServerList->SetSelectedItem( i );
+			int by = y + _y;
+			m_pConnectButton->SetPos( m_iServerWidth + m_iPlayersWidth + m_iPingWidth, by );
+			m_pConnectButton->SetVisible( true );
+			m_pListSlider->SetVisible( true );
+
+			char szCommand[128];
+			Q_snprintf( szCommand, sizeof( szCommand ), "connect %s", m_pServerList->GetItemData( i )->GetString( "ServerIP", "" ) );
+			m_pConnectButton->SetCommandString( szCommand );
+		}
+	}
+}
+
+void CServerlistPanel::OnCommand( const char* command )
+{
+	if ( !Q_strcmp( command, "scrolled" ) )
+	{
+		m_pServerList->GetScrollBar()->SetValue( m_pListSlider->GetValue() );
+	}
+	else
+	{
+		BaseClass::OnCommand( command );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Used for sorting servers
+//-----------------------------------------------------------------------------
+bool CServerlistPanel::ServerSortFunc( vgui::SectionedListPanel *list, int itemID1, int itemID2 )
+{
+	KeyValues *it1 = list->GetItemData( itemID1 );
+	KeyValues *it2 = list->GetItemData( itemID2 );
+	Assert( it1 && it2 );
+
+	int v1 = it1->GetInt( "CurPlayers" );
+	int v2 = it2->GetInt( "CurPlayers" );
+	if ( v1 > v2 )
+		return true;
+	else if ( v1 < v2 )
+		return false;
+
+	/*
+	int iOff1 = it1->GetBool("Official");
+	int iOff2 = it2->GetBool("Official");
+	if (iOff1 && !iOff2)
+		return true;
+	else if (!iOff1 && iOff2)
+		return false;
+	*/
+
+	int iPing1 = it1->GetInt( "Ping" );
+	if ( iPing1 == 0 )
+		return false;
+	int iPing2 = it2->GetInt( "Ping" );
+	return ( iPing1 < iPing2 );
+}
+
+void CServerlistPanel::SetServerlistSize( int size )
+{
+	m_iSize = size;
+};
+
+void CServerlistPanel::UpdateServerInfo()
+{
+	m_pServerList->RemoveAll();
+	HFont Font = GETSCHEME()->GetFont( "FontStoreOriginalPrice", true );
+
+	for ( int i = 0; i < m_iSize; i++ )
+	{
+		gameserveritem_t m_Server = GetNotificationManager()->GetServerInfo( i );
+		if ( m_Server.m_steamID.GetAccountID() == 0 )
+			continue;
+
+		// Don't show passworded/locked servers.
+		if ( m_Server.m_bPassword )
+			continue;
+
+		// Hide servers with zero human players.
+		if ( ( m_Server.m_nPlayers - m_Server.m_nBotPlayers ) < 1 )
+			continue;
+
+		char szServerName[128];
+		char szServerIP[32];
+		char szServerPlayers[16];
+		int szServerCurPlayers;
+		int szServerPing;
+		char szServerMap[32];
+
+		Q_snprintf( szServerName, sizeof( szServerName ), "%s", m_Server.GetName() );
+		Q_snprintf( szServerIP, sizeof( szServerIP ), "%s", m_Server.m_NetAdr.GetQueryAddressString() );
+		Q_snprintf( szServerPlayers, sizeof( szServerPlayers ), "%i/%i", m_Server.m_nPlayers, m_Server.m_nMaxPlayers );
+		szServerCurPlayers = m_Server.m_nPlayers - m_Server.m_nBotPlayers; // Current HUMAN Players.
+		szServerPing = m_Server.m_nPing;
+		Q_snprintf( szServerMap, sizeof( szServerMap ), "%s", m_Server.m_szMap );
+
+		KeyValues *curitem = new KeyValues( "data" );
+
+		curitem->SetString( "Name", szServerName );
+		curitem->SetString( "ServerIP", szServerIP );
+		curitem->SetString( "Players", szServerPlayers );
+		curitem->SetInt( "Ping", szServerPing );
+		curitem->SetInt( "CurPlayers", szServerCurPlayers );
+		curitem->SetString( "Map", szServerMap );
+
+		int itemID = m_pServerList->AddItem( 0, curitem );
+
+		m_pServerList->SetItemFgColor( itemID, GETSCHEME()->GetColor( "AdvTextDefault", Color( 255, 255, 255, 255 ) ) );
+
+		m_pServerList->SetItemFont( itemID, Font );
+		curitem->deleteThis();
+	}
+	
+//#ifdef _DEBUG
+	if ( m_pServerList->GetItemCount() < 1 )
+	{
+		// If we don't have any servers listed, make a dummy server for the debugger.
+		KeyValues *curitemDEBUG = new KeyValues( "data" );
+
+		curitemDEBUG->SetString( "Name", "DEBUG NAME" );
+		curitemDEBUG->SetString( "ServerIP", "127.0.0.1:27015" );
+		curitemDEBUG->SetString( "Players", "0/0" );
+		curitemDEBUG->SetInt( "Ping", 000 );
+		curitemDEBUG->SetInt( "CurPlayers", 0 );
+		curitemDEBUG->SetString( "Map", "DEBUG MAP" );
+
+		int itemID = m_pServerList->AddItem( 0, curitemDEBUG );
+
+		m_pServerList->SetItemFgColor( itemID, GETSCHEME()->GetColor( "AdvTextDefault", Color( 255, 255, 255, 255 ) ) );
+
+		m_pServerList->SetItemFont( itemID, Font );
+		curitemDEBUG->deleteThis();
+	}
+	SetVisible( true );
+//#else
+	/*if ( m_pServerList->GetItemCount() > 0 )
+	{
+		SetVisible( true );
+	}
+	else
+	{
+		SetVisible( false );
+	}*/
+//#endif
+
+	int min, max;
+	m_pServerList->InvalidateLayout( 1, 0 );
+	m_pServerList->GetScrollBar()->GetRange( min, max );
+	m_pListSlider->SetRange( min, max - m_pServerList->GetScrollBar()->GetButton( 0 )->GetTall() * 4 );
 }

@@ -274,6 +274,7 @@ void ImagePanel::GetSettings(KeyValues *outResourceData)
 	outResourceData->SetInt("tileImage", m_bTileImage);
 	outResourceData->SetInt("tileHorizontally", m_bTileHorizontally);
 	outResourceData->SetInt("tileVertically", m_bTileVertically);
+	outResourceData->SetInt("rotation", m_iRotation);
 }
 
 //-----------------------------------------------------------------------------
@@ -294,6 +295,8 @@ void ImagePanel::ApplySettings(KeyValues *inResourceData)
 	m_bTileImage = inResourceData->GetInt("tileImage", 0);
 	m_bTileHorizontally = inResourceData->GetInt("tileHorizontally", m_bTileImage);
 	m_bTileVertically = inResourceData->GetInt("tileVertically", m_bTileImage);
+	m_iRotation = inResourceData->GetInt("rotation", m_iRotation);
+
 	const char *imageName = inResourceData->GetString("image", "");
 	if ( *imageName )
 	{

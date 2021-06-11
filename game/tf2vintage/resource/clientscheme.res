@@ -172,6 +172,12 @@ Scheme
 		"UpgradeSelectedBg"		"249 138 83 255"
 		"UpgradeDisabledFg"		"64 59 52 255"
 		"UpgradeDisabledBg"		"79 77 68 255"
+		
+		// Borrowed from SourceScheme.res
+		"SteamLightGreen"	"157 194 80 255"
+		"AchievementsLightGrey"		"79 79 79 255"
+		"AchievementsDarkGrey"		"55 55 55 255"
+		"AchievementsInactiveFG"	"130 130 130 255"
 	}
 
 	///////////////////// BASE SETTINGS ////////////////////////

@@ -14,15 +14,13 @@
 #include "vgui/IScheme.h"
 #include "const.h"
 #include "igameevents.h"
-#ifdef TF_VINTAGE_CLIENT
-#include "tf_controls.h"
-#include "LoadingTipPanel.h"
-#else
-#include "vgui_controls/Button.h"
-#endif
+#include "controls/tf_advbutton.h"
+#include "vgui_controls/EditablePanel.h"
 
 namespace BaseModUI 
 {
+	class CLoadingTipPanel;
+
 	class LoadingProgress : public CBaseModFrame, public CGameEventListener
 	{
 		DECLARE_CLASS_SIMPLE( LoadingProgress, CBaseModFrame );
@@ -72,16 +70,11 @@ namespace BaseModUI
 
 		vgui::ProgressBar	*m_pLoadingBar;
 		vgui::ImagePanel	*m_pLoadingSpinner;
-		vgui::ImagePanel	*m_pBGImage;
+		vgui::ImagePanel	*m_pMainBackground;
 		vgui::Panel			*m_pFooter;
 		vgui::Label			*m_pLoadingProgress;
 
-#ifdef TF_VINTAGE_CLIENT
-		CExMenuButton		*m_pCancelButton;
-#else
-		vgui::Button		*m_pCancelButton;
-#endif
-
+		CTFMenuButton		*m_pCancelButton;
 		LoadingType			m_LoadingType;
 		LoadingWindowType	m_LoadingWindowType;
 
@@ -98,6 +91,26 @@ namespace BaseModUI
 		float				m_flLastEngineTime;
 
 		CLoadingTipPanel	*m_pTipPanel;
+	};
+
+	//===========================================================================//
+	// Purpose: Tip display during level loads.
+	//===========================================================================//
+	class CLoadingTipPanel : public vgui::EditablePanel
+	{
+		DECLARE_CLASS_SIMPLE( CLoadingTipPanel, vgui::EditablePanel )
+
+	public:
+		CLoadingTipPanel( Panel *pParent );
+		~CLoadingTipPanel() {}
+
+		virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
+		void ReloadScheme( void );
+
+		void NextTip( void );
+
+	private:
+		void SetupTips( void );
 	};
 };
 #endif // VLOADINGPROGRESS_H

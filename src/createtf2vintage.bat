@@ -1,2 +1,4 @@
-devtools\bin\vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
-PAUSE
+@echo off
+cls
+	devtools\bin\vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
+pause

@@ -1,6 +1,11 @@
 #include "cbase.h"
 #include "tf_notificationmanager.h"
+#ifdef GAMEUI_EMBEDDED
+#include "GameUI_Interface.h"
+#include "BasePanel.h"
+#else
 #include "tf_mainmenu.h"
+#endif // GAMEUI_EMBEDDED
 #include "filesystem.h"
 #include "script_parser.h"
 #include "tf_gamerules.h"
@@ -57,7 +62,7 @@ bool CTFNotificationManager::Init()
 		hRequest = 0;
 		MatchMakingKeyValuePair_t filter;
 		Q_strncpy( filter.m_szKey, "gamedir", sizeof( filter.m_szKey ) );
-		Q_strncpy( filter.m_szValue, "tf2vintage", sizeof( filter.m_szKey ) ); // change "tf2vintage" to engine->GetGameDirectory() before the release
+		Q_strncpy( filter.m_szValue, engine->GetGameDirectory(), sizeof( filter.m_szKey ) );
 		m_vecServerFilters.AddToTail( filter );
 	}
 	return true;
@@ -65,7 +70,11 @@ bool CTFNotificationManager::Init()
 
 void CTFNotificationManager::Update( float frametime )
 {
+#ifdef GAMEUI_EMBEDDED
+	if ( !GameUI().IsInLevel() && gpGlobals->curtime - fUpdateLastCheck > tf2v_updatefrequency.GetFloat() )
+#else
 	if ( !MAINMENU_ROOT->InGame() && gpGlobals->curtime - fUpdateLastCheck > tf2v_updatefrequency.GetFloat() )
+#endif
 	{
 		fUpdateLastCheck = gpGlobals->curtime;
 		UpdateServerlistInfo();
@@ -114,8 +123,13 @@ void CTFNotificationManager::ServerResponded( HServerListRequest hRequest, int i
 
 void CTFNotificationManager::RefreshComplete( HServerListRequest hRequest, EMatchMakingServerResponse response )
 {
+#ifdef GAMEUI_EMBEDDED
+	BasePanel()->SetServerlistSize( m_mapServers.Count() );
+	BasePanel()->UpdateServerInfo();
+#else
 	MAINMENU_ROOT->SetServerlistSize( m_mapServers.Count() );
 	MAINMENU_ROOT->OnServerInfoUpdate();
+#endif
 }
 
 //-----------------------------------------------------------------------------

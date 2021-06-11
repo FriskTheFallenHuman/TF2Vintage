@@ -6,43 +6,36 @@
 //===========================================================================//
 
 #include "CreateMultiplayerGameServerPage.h"
-
-using namespace vgui;
-
+#include "materialsystem/imesh.h"
+#include "materialsystem/imaterial.h"
 #include <KeyValues.h>
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/RadioButton.h>
 #include <vgui_controls/CheckButton.h>
+#include <vgui_controls/ImagePanel.h>
 #include "filesystem.h"
 #include "tier1/convar.h"
 #include "EngineInterface.h"
 #include "CvarToggleCheckButton.h"
-
 #include "ModInfo.h"
-
-// for SRC
-#include <vstdlib/random.h>
+#include <vstdlib/random.h>	// for SRC
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
 #define RANDOM_MAP "#GameUI_RandomMap"
 
+using namespace vgui;
+
+extern const char *GetMapDisplayName( const char *mapName );
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CCreateMultiplayerGameServerPage::CCreateMultiplayerGameServerPage( vgui::Panel *parent, const char *name ) : PropertyPage( parent, name )
+CCreateMultiplayerGameServerPage::CCreateMultiplayerGameServerPage( vgui::Panel *parent, const char *name ) : BaseClass( parent, name )
 {
-	m_pSavedData = NULL;
-
 	// we can use this if we decide we want to put "listen server" at the end of the game name
 	m_pMapList = new ComboBox( this, "MapList", 12, false );
-
-	m_pEnableBotsCheck = new CheckButton( this, "EnableBotsCheck", "" );
-	m_pEnableBotsCheck->SetVisible( false );
-	m_pEnableBotsCheck->SetEnabled( false );
-
-	LoadControlSettings( "Resource/CreateMultiplayerGameServerPage.res" );
 
 	LoadMapList();
 	m_szMapName[0]  = 0;
@@ -64,64 +57,12 @@ CCreateMultiplayerGameServerPage::~CCreateMultiplayerGameServerPage()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CCreateMultiplayerGameServerPage::EnableBots( KeyValues *data )
-{
-	m_pSavedData = data;
-
-	int quota = data->GetInt( "tf_bot_quota", 0 );
-	SetControlInt( "BotQuotaCombo", quota );
-	m_pEnableBotsCheck->SetSelected( (quota > 0) );
-
-	int difficulty = data->GetInt( "tf_bot_difficulty", 0 );
-	difficulty = max( difficulty, 0 );
-	difficulty = min( 4, difficulty );
-
-	char buttonName[64];
-	Q_snprintf( buttonName, sizeof( buttonName ), "DifficultyLevel%d", difficulty );
-	vgui::RadioButton *button = dynamic_cast< vgui::RadioButton * >(FindChildByName( buttonName ));
-	if ( button )
-		button->SetSelected( true );
-}
-
-//-----------------------------------------------------------------------------
 // Purpose: called to get the info from the dialog
 //-----------------------------------------------------------------------------
 void CCreateMultiplayerGameServerPage::OnApplyChanges()
 {
 	KeyValues *kv = m_pMapList->GetActiveItemUserData();
 	Q_strncpy( m_szMapName, kv->GetString( "mapname", "" ), DATA_STR_LENGTH );
-
-	if ( m_pSavedData )
-	{
-		int quota = GetControlInt( "BotQuotaCombo", 0 );
-		if ( !m_pEnableBotsCheck->IsSelected() )
-			quota = 0;
-
-		m_pSavedData->SetInt( "tf_bot_quota", quota );
-		ConVarRef bot_quota( "tf_bot_quota" );
-		bot_quota.SetValue( quota );
-
-		int difficulty = 0;
-		for ( int i=0; i<4; ++i )
-		{
-			char buttonName[64];
-			Q_snprintf( buttonName, sizeof( buttonName ), "DifficultyLevel%d", i );
-			vgui::RadioButton *button = dynamic_cast< vgui::RadioButton * >(FindChildByName( buttonName ));
-			if ( button )
-			{
-				if ( button->IsSelected() )
-				{
-					difficulty = i;
-					break;
-				}
-			}
-		}
-		m_pSavedData->SetInt( "tf_bot_difficulty", difficulty );
-		ConVarRef bot_difficulty( "tf_bot_difficulty" );
-		bot_difficulty.SetValue( difficulty );
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -148,18 +89,13 @@ void CCreateMultiplayerGameServerPage::LoadMaps( const char *pszPathID )
 		// remove the text 'maps/' and '.bsp' from the file name to get the map name
 		str = Q_strstr( pszFilename, "maps" );
 		if ( str )
-			Q_strncpy( mapname, str + 5, sizeof(mapname) - 1 );	// maps + \\ = 5
+			Q_strncpy( mapname, str + 5, sizeof( mapname ) - 1 );	// maps + \\ = 5
 		else
-			Q_strncpy( mapname, pszFilename, sizeof(mapname) - 1 );
+			Q_strncpy( mapname, pszFilename, sizeof( mapname ) - 1 );
 
 		ext = Q_strstr( mapname, ".bsp" );
 		if ( ext )
 			*ext = 0;
-
-		//!! hack: strip out single player HL maps
-		// this needs to be specified in a separate file
-		if ( !stricmp( ModInfo().GetGameName(), "Half-Life" ) && ( mapname[0] == 'c' || mapname[0] == 't') && mapname[2] == 'a' && mapname[1] >= '0' && mapname[1] <= '5' )
-			goto nextFile;
 
 		// strip out maps that shouldn't be displayed
 		if ( hiddenMaps )
@@ -252,14 +188,9 @@ void CCreateMultiplayerGameServerPage::SetMap( const char *mapName )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CCreateMultiplayerGameServerPage::OnCheckButtonChecked()
+void CCreateMultiplayerGameServerPage::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
-	SetControlEnabled( "DifficultyLevel0", m_pEnableBotsCheck->IsSelected() );
-	SetControlEnabled( "DifficultyLevel1", m_pEnableBotsCheck->IsSelected() );
-	SetControlEnabled( "DifficultyLevel2", m_pEnableBotsCheck->IsSelected() );
-	SetControlEnabled( "DifficultyLevel3", m_pEnableBotsCheck->IsSelected() );
-	SetControlEnabled( "DifficultyLevel4", m_pEnableBotsCheck->IsSelected() );
-	SetControlEnabled( "BotQuotaCombo", m_pEnableBotsCheck->IsSelected() );
-	SetControlEnabled( "BotQuotaLabel", m_pEnableBotsCheck->IsSelected() );
-	SetControlEnabled( "BotDifficultyLabel", m_pEnableBotsCheck->IsSelected() );
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/CreateMultiplayerGameServerPage.res" );
 }
