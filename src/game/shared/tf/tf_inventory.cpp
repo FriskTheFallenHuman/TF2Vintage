@@ -14,6 +14,11 @@
 #include "utlbuffer.h"
 #ifdef CLIENT_DLL
 #include "tier0/icommandline.h"
+#include "steam/isteamutils.h"
+#include "steam/isteamuserstats.h"
+#include "steam/isteamutils.h"
+#include "steam/steam_api.h"
+#include "steam/isteamremotestorage.h"
 #endif
 
 static CTFInventory g_TFInventory;
@@ -121,12 +126,12 @@ void CTFInventory::LoadInventory()
 
 #ifdef _DEBUG
 	bool bReskinsEnabled = true;
-	bool bSpecialsEnabled = true;
 #else
-	bool bReskinsEnabled = CommandLine()->CheckParm( "-showreskins" );
-	bool bSpecialsEnabled = CommandLine()->CheckParm( "-goldenboy" );
+	bool bReskinsEnabled = !CommandLine()->CheckParm( "-hidereskins" ); // CommandLine()->CheckParm( "-showreskins" ) but inversed
 #endif
-
+	bool bSpecialsEnabled = false;
+	if (SteamUser())
+		bSpecialsEnabled = SteamUser()->GetSteamID().ConvertToUint64() == 76561197984621385; // uint64 VIPRANKS1
 #else
 	bool bReskinsEnabled = true;
 	bool bSpecialsEnabled = true;

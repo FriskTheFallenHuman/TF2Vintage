@@ -12094,6 +12094,7 @@ uint64 VIPRANK1[] =
 	76561198032163560, // Anthony
 	76561198076264543, // Deathreus
 	76561198315815308, // Eshy
+	76561198851124770, // SandvichThief
 };
 
 // Rank 2.
@@ -12101,7 +12102,6 @@ uint64 VIPRANK1[] =
 uint64 VIPRANK2[] =
 {
 	76561198112316720, // DoopieWop
-	76561198851124770, // SandvichThief
 	76561197992168067, // PeatEar
 	76561198828415839, // Very Suspicious
 	76561198261851104, // Bumpmap
@@ -12113,7 +12113,6 @@ uint64 VIPRANK3[] =
 {
 	76561198078752968, // FusionR
 	76561198263004448, // Private Polygon
-	76561198082424900, // FatMagic
 };
 
 // Rank 4.

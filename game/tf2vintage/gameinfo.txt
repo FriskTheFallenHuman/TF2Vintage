@@ -10,7 +10,7 @@
 	nohimodel 		1
 	nocrosshair 	0
 	advcrosshair 	1
-	nodegraph		1
+	nodegraph		0
 	supportsvr 		0
 	supportsDX8 	0
 	GameData	"tf2v.fgd"
@@ -19,12 +19,11 @@
 		"test_speakers"		1 
 		"test_hardware"		1 
 	}
-	InstancePath 	"maps/instances/"
+	InstancePath 	"maps/instances/"	
 
 	FileSystem 
 	{ 
-		SteamAppId		243750	// Source SDK Base 2013 Multiplayer
-
+		SteamAppId		243750	// Source SDK Base 2013 Multiplayer	
 		SearchPaths 
 		{ 
 			// Firstly, mount all user customizations.  This will search for VPKs and subfolders 
@@ -32,45 +31,54 @@
 			// pack up the custom content into a VPK.  To "install" a mod, just drop it in this 
 			// folder. 
 			// Note that this folder is scanned only when the game is booted.
-			// TF2V take priority, followed by Retail TF2.
+			// TF2V takes priority, followed by Retail TF2.
 			game+mod+custom_mod			"|gameinfo_path|custom/*"
-			
+			//game+mod			"|all_source_engine_paths|../Team Fortress 2/tf/custom/*"
+						
 			// Next, add the customizable TF2V parameters in.
 			game+mod			"|gameinfo_path|customplayer/*"
 
 			// Search loose files.  We'll set the directory containing the gameinfo.txt file
 			// as the first "mod" search path (after any user customizations). This is also the one
 			// that's used when writing to the "mod" path.
-			game+game_write+mod+mod_write+default_write_path		"|gameinfo_path|."
-			gamebin					"|gameinfo_path|bin"	
+			// TF2V takes priority, followed by Retail TF2.
+			game+mod+mod_write+default_write_path		"|gameinfo_path|."
+			gamebin						"|gameinfo_path|bin"
+			//game+mod									"|all_source_engine_paths|../Team Fortress 2/tf/."
 			
 			//  Load base TF2V assets.
-			game+mod		"|gameinfo_path|vpk/base/tf2v_core.vpk"
-			game+mod		"|gameinfo_path|vpk/base/tf2v_shared.vpk"
-			game+mod		"|gameinfo_path|vpk/base/tf2v_vfp.vpk"
-			game+mod		"|gameinfo_path|vpk/base/tf2v_stc.vpk"
-			
-			// Mount in missing assets from TF2
-			game_lv			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_lv.vpk"
-			game			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_textures.vpk"
-			game			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_sound_misc.vpk"
-			game+vgui		"|all_source_engine_paths|../Team Fortress 2/tf/tf2_misc.vpk"
-			game			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_sound_vo_english.vpk"
+			game_lv					"|gameinfo_path|vpk/base/tf2v_lv.vpk"
+			game+mod				"|gameinfo_path|vpk/base/tf2v_core.vpk"
+			game+mod				"|gameinfo_path|vpk/base/tf2v_shared.vpk"
+			game+mod				"|gameinfo_path|vpk/base/tf2v_vfp.vpk"
+			game+mod				"|gameinfo_path|vpk/base/tf2v_stc.vpk"
+			game+mod				"|gameinfo_path|vpk/base/tf2v_vo_english.vpk"
 
+			// Add TF2V game files. Used for standalone TF2V copy.
+			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_vmt.vpk"
+			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_vtf.vpk"
+			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_sounds.vpk"
+			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_models.vpk"
+						
+						
 			// We search VPK files before ordinary folders, because most files will be found in
 			// VPK and we can avoid making thousands of file system calls to attempt to open files
 			// in folders where they don't exist.  (Searching a VPK is much faster than making an 
 			// operating system call.)
-			game				"|all_source_engine_paths|hl2/hl2_textures.vpk"			
-			game				"|all_source_engine_paths|hl2/hl2_sound_vo_english.vpk"			
-			game				"|all_source_engine_paths|hl2/hl2_sound_misc.vpk"	
+			game				"|all_source_engine_paths|hl2/hl2_textures.vpk"
+			game				"|all_source_engine_paths|hl2/hl2_sound_vo_english.vpk"
+			game				"|all_source_engine_paths|hl2/hl2_sound_misc.vpk"
 			game+vgui			"|all_source_engine_paths|hl2/hl2_misc.vpk"
 			platform+vgui		"|all_source_engine_paths|platform/platform_misc.vpk"
 			
-			// Mount in shared HL2 loose files			
-			game				"|all_source_engine_paths|../Team Fortress 2/tf"
+			// Add the HL2 directory as a game search path.  This is also where where writes
+			// to the "game" path go.
+			game+game_write		"|gameinfo_path|."
+
+			// Mount in shared HL2 loose files					
 			game				"|all_source_engine_paths|hl2"			
-			platform			"|all_source_engine_paths|platform"
+			platform			"|all_source_engine_paths|platform"		
+
 			
 			// Random files downloaded from gameservers go into a seperate directory, so
 			// that it's easy to keep those files segregated from the official game files
@@ -84,6 +92,20 @@
 			// The map search pack is mounted at the top of the search path list,
 			// but only while you are connected that server and on that map.
 			game+download			"|gameinfo_path|download/"
-		}	
-	}
+		}
+
+		AdditionalContentId     440
+		AdditionalContentServerID     232250
+		AdditionalContentRoot     "tf"
+		AdditionalContentPaths
+        {
+            // Mount additional user customizations first
+            game+mod            "|content_root|custom/*"
+			game+mod			"|content_root|."
+            game+mod            "|content_root|tf2_textures.vpk"
+            game+mod       		"|content_root|tf2_misc.vpk"
+			game+mod            "|content_root|tf2_sound_misc.vpk"
+            game+mod            "|content_root|tf2_sound_vo_english.vpk"
+        }		
+	}		
 }

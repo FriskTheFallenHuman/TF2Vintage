@@ -1181,26 +1181,6 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		cl_cloud_settings->SetValue( 0 );
 		cl_cloud_settings->SetMax( 0 );
 	}
-	
-#ifdef TF_VINTAGE_CLIENT
-	if (steamapicontext && steamapicontext->SteamApps())
-	{
-		char szPath[MAX_PATH * 2];
-		int ccFolder = steamapicontext->SteamApps()->GetAppInstallDir( 440, szPath, sizeof( szPath ) );
-		if (ccFolder > 0)
-		{
-			V_AppendSlash( szPath, sizeof( szPath ) );
-			//V_strncat( szPath, "tf", sizeof( szPath ) );
-			if (UTIL_IsLowViolence())
-				g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_lv.vpk", szPath ), "GAME_LV" );
-			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_textures.vpk", szPath ), "GAME" );
-			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_misc.vpk", szPath ), "GAME" );
-			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_misc.vpk", szPath ), "GAME" );
-			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_vo_english.vpk", szPath ), "GAME" );
-		}
-
-	}
-#endif
 
 	//if ( !CommandLine()->CheckParm( "-noscripting" ) )
 	if ( CommandLine()->CheckParm( "-vscript" ) )
