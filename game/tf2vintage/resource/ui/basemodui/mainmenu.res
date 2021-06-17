@@ -17,74 +17,6 @@
 		"setclosebuttonvisible"		"0"
 	}
 	
-	"Background"
-	{
-		"ControlName"			"ScalableImagePanel"
-		"fieldName"				"Background"
-		"xpos"					"cs-0.5"
-		"ypos"					"0"
-		"zpos"					"-200"
-		"wide"					"o1.6"
-		"tall"					"f0"
-		"visible"				"0"
-		"enabled"				"1"
-		"image"					""
-		"scaleImage"			"1"
-		"proportionaltoparent"	"1"
-
-		if_wider
-		{
-			"wide"			"f0"
-			"tall"			"o0.628"
-		}
-		if_taller
-		{
-			"wide"			"o1.6"
-			"tall"			"f0"
-		}
-
-		if_halloween_0
-		{
-			"image"		"../console/title_team_halloween_widescreen"
-		}
-		if_halloween_1
-		{
-			"image"		"../console/title_team_halloween2011_widescreen"
-		}	
-		if_halloween_2
-		{
-			"image"		"../console/title_team_halloween2012_widescreen"
-		}
-		if_halloween_3
-		{
-			"image"		"../console/title_team_halloween2013_widescreen"
-		}
-		if_halloween_4
-		{
-			"image"		"../console/title_team_halloween2014_widescreen"
-		}
-		if_halloween_5
-		{
-			"image"		"../console/title_team_halloween2015_widescreen"
-		}
-		if_halloween_6
-		{	
-			"image"		"../console/title_team_halloween2017_widescreen"
-		}
-		if_fullmoon
-		{
-			"image"		"../console/title_fullmoon_widescreen"
-		}
-		if_christmas_0
-		{
-			"image"		"../console/background_xmas2011_widescreen"
-		}
-		if_christmas_1
-		{
-			"image"		"../console/background_xmas2020_widescreen"
-		}
-	}
-	
 	// ---------- Header Content ----------
 	
 	"HeaderBackground"
@@ -241,14 +173,14 @@
 		"fieldName"			"Logo"
 		"xpos"				"c-295"
 		"ypos"				"100"
-		"zpos"				"0"		
+		"zpos"				"-5"		
 		"wide"				"450"
-		"tall"				"225"
+		"tall"				"125"
 		"visible"			"1"
 		"enabled"			"1"
-		"image"				"../vgui/main_menu/TF2_Vintage_Logo_NoCircle"
+		"image"				"../vgui/main_menu/tf2_vintage_logo"
 		"alpha"				"255"
-		"scaleImage"		"1"	
+		"scaleImage"		"0"	
 	}
 
 	"CentralMenuBackground"
@@ -344,7 +276,7 @@
 		"visible"			"1"
 		"enabled"			"1"
 		"bordervisible"		"1"		
-		"command"			"Loadout"
+		"command"			"Backpack"
 		
 		"SubButton"
 		{
@@ -707,7 +639,7 @@
 		"enabled"			"1"
 		"bordervisible"		"1"
 		"labelText" 		""
-		"command"			"engine callvote"
+		"command"			"CallVote"
 		
 		"SubButton"
 		{

@@ -37,6 +37,7 @@
 #include "vloadingprogress.h"
 #include "vmainmenu.h"
 #include "nb_header_footer.h"
+#include "vgui/charinfo_loadout_panel.h"
 
 // UI defines. Include if you want to implement some of them [str]
 #include "ui_defines.h"
@@ -68,10 +69,19 @@ CON_COMMAND( ui_frames_reload, "Reload all GameUI frames." )
 	CBaseModPanel::GetSingleton().InvalidateFramesLayout( true, true );
 }
 
+KeyValues *g_TFMainBackgrounds;
+KeyValues *TFMainBackgrounds() { return g_TFMainBackgrounds; }
+void SetupTFBackgrounds()
+{
+	if ( g_TFMainBackgrounds )
+		g_TFMainBackgrounds->deleteThis();
+
+	g_TFMainBackgrounds = new KeyValues( "TFMainMenuBackgrounds" );
+	g_TFMainBackgrounds->LoadFromFile( g_pFullFileSystem, "scripts/tf_backgrounds.txt" );
+}
+
 //=============================================================================
-CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
-	m_bClosingAllWindows( false ),
-	m_lastActiveUserId( 0 )
+CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ), m_bClosingAllWindows( false ), m_lastActiveUserId( 0 )
 {
 #if !defined( NOSTEAM )
 	// Set Steam overlay position
@@ -87,9 +97,7 @@ CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
 	m_LevelLoading = false;
 	
 	for ( int k = 0; k < WPRI_COUNT; ++ k )
-	{
 		m_ActiveWindow[k] = WT_NONE;
-	}
 
 	// delay 3 frames before doing activation on initialization
 	// needed to allow engine to exec startup commands (background map signal is 1 frame behind) 
@@ -116,8 +124,6 @@ CBaseModPanel::CBaseModPanel(): BaseClass( 0, "CBaseModPanel" ),
 	// this allows cbuf commands that occur on the first frame that may start a map
 	m_iPlayGameStartupSound = 2;
 
-	m_nProductImageWide = 0;
-	m_nProductImageTall = 0;
 	m_flMovieFadeInTime = 0.0f;
 	m_pBackgroundMaterial = NULL;
 	m_pBackgroundTexture = NULL;
@@ -891,6 +897,13 @@ void CBaseModPanel::OpenOptionsDialog( Panel *parent )
 }
 
 //=============================================================================
+void CBaseModPanel::OpenArmoryDialog( Panel *parent )
+{
+	CCharInfoLoadoutPanel *tf_armory = new CCharInfoLoadoutPanel( this );
+	tf_armory->Activate();
+}
+
+//=============================================================================
 void CBaseModPanel::OpenTFOptionsDialog( Panel *parent )
 {
 	CMultiplayerAdvancedDialog *tf_options = new CMultiplayerAdvancedDialog( this );
@@ -981,28 +994,36 @@ void CBaseModPanel::ApplySchemeSettings( IScheme *pScheme )
 	m_iProductImageID = surface()->CreateNewTextureID();
 	surface()->DrawSetTextureFile( m_iProductImageID, "console/startup_loading", true, false );
 
-	int logoW = 384;
-	int logoH = 192;
-
-	if ( !bIsWidescreen )
+	if( TFMainBackgrounds() )
 	{
-		// smaller in standard res
-		logoW = 320;
-		logoH = 160;
+		KeyValues *inLoadingSettings = TFMainBackgrounds()->FindKey( "MainMenu" );
+		if( inLoadingSettings )
+		{
+			int nChosenLoadingImage = RandomInt( 1, inLoadingSettings->GetInt( "background_count", 1 ) );
+				
+			int i = 0;
+				
+			for( KeyValues *pSub = inLoadingSettings->GetFirstValue(); pSub; pSub = pSub->GetNextValue() )
+			{
+				if( !Q_strcmp(pSub->GetName(), "background_count" ) )
+					continue;
+
+				i++;
+				if( nChosenLoadingImage == i )
+				{
+					if ( aspectRatio >= 1.6f )
+						Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s_widescreen.vtf", pSub->GetString() );	// use the widescreen version
+					else
+						Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s.vtf", pSub->GetString() );
+					break;
+				}
+			}
+		}
 	}
 
-	m_nProductImageWide = vgui::scheme()->GetProportionalScaledValue( logoW );
-	m_nProductImageTall = vgui::scheme()->GetProportionalScaledValue( logoH );
-
-	if ( aspectRatio >= 1.6f )
-	{
-		// use the widescreen version
-		Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s_widescreen.vtf", "background01" );
-	}
-	else
-	{
-		Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s_widescreen.vtf", "background01" );
-	}
+	// Active hidden console
+	if ( GameConsole().IsConsoleVisible() )
+		GameConsole().Activate();
 }
 
 //=============================================================================
@@ -1402,9 +1423,7 @@ void CBaseModPanel::PlayUISound( UISound_t UISound )
 {
 	const char *pSound = GetUISoundName( UISound );
 	if ( pSound )
-	{
 		vgui::surface()->PlaySound( pSound );
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1471,7 +1490,6 @@ void CBaseModPanel::PlayGameStartupSound()
 void CBaseModPanel::OnSetFocus()
 {
 	BaseClass::OnSetFocus();
-
 	GameConsole().Hide();
 }
 

@@ -11,7 +11,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"			"LblMessage"
-		"fgcolor_override"	"215 215 215 255"
+		"fgcolor_override"	"HudOffWhite"
 	}
 	
 	"GenericConfirmation"

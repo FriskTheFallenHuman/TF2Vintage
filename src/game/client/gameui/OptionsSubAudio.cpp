@@ -12,6 +12,8 @@
 #include "ModInfo.h"
 #include "vgui_controls/ComboBox.h"
 #include "vgui_controls/QueryBox.h"
+#include "vgui_controls/PropertyDialog.h"
+#include "vgui_controls/PropertyPage.h"
 #include "tier1/KeyValues.h"
 #include "tier1/convar.h"
 #include <vgui/IInput.h>
@@ -37,7 +39,7 @@ enum SoundQuality_e
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-COptionsSubAudio::COptionsSubAudio(vgui::Panel *parent) : PropertyPage(parent, NULL)
+COptionsSubAudio::COptionsSubAudio( vgui::Panel *parent ) : BaseClass( parent, NULL )
 {
     SetSize(20, 20);
 
@@ -364,33 +366,47 @@ void COptionsSubAudio::RunTestSpeakers()
 //-----------------------------------------------------------------------------
 void COptionsSubAudio::OpenThirdPartySoundCreditsDialog()
 {
-   if (!m_OptionsSubAudioThirdPartyCreditsDlg.Get())
-   {
-      m_OptionsSubAudioThirdPartyCreditsDlg = new COptionsSubAudioThirdPartyCreditsDlg(GetVParent());
-   }
+   if ( !m_OptionsSubAudioThirdPartyCreditsDlg.Get() )
+      m_OptionsSubAudioThirdPartyCreditsDlg = new COptionsSubAudioThirdPartyCreditsDlg( GetVParent() );
+
    m_OptionsSubAudioThirdPartyCreditsDlg->Activate();
 }
 
 
-COptionsSubAudioThirdPartyCreditsDlg::COptionsSubAudioThirdPartyCreditsDlg( vgui::VPANEL hParent ) : BaseClass( NULL, NULL )
+COptionsSubAudioThirdPartyCreditsDlg::COptionsSubAudioThirdPartyCreditsDlg( vgui::VPANEL hParent ) : BaseClass( NULL, "OptionsSubAudioThirdPartyDlg" )
 {
 	// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
-	SetTitle("#GameUI_ThirdPartyAudio_Title", true);
+	/*SetTitle("#GameUI_ThirdPartyAudio_Title", true);
     SetSize(500, 200);
     LoadControlSettings("Resource/OptionsSubAudioThirdPartyDLG.res");
     MoveToCenterOfScreen();
     SetSizeable(false);
-    SetDeleteSelfOnClose(true);
+    SetDeleteSelfOnClose(true);*/
+
+	SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" ) );
+
+	// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
+	SetProportional( true );
+	SetMoveable( false );
+	SetSizeable( false );
+	SetDeleteSelfOnClose( true );
+	SetKeyBoardInputEnabled( true );
+	SetMouseInputEnabled( true );
+	SetOKButtonVisible( false );
+	SetCancelButtonVisible( false );
+	SetApplyButtonVisible( false );
+	
+	SetTitle( "", false );
 }
 
 void COptionsSubAudioThirdPartyCreditsDlg::Activate()
 {
 	BaseClass::Activate();
 
-	input()->SetAppModalSurface(GetVPanel());
+	input()->SetAppModalSurface( GetVPanel() );
 }
 
-void COptionsSubAudioThirdPartyCreditsDlg::OnKeyCodeTyped(vgui::KeyCode code)
+void COptionsSubAudioThirdPartyCreditsDlg::OnKeyCodeTyped( vgui::KeyCode code )
 {
 	// force ourselves to be closed if the escape key it pressed
 	if (code == KEY_ESCAPE)
@@ -401,4 +417,11 @@ void COptionsSubAudioThirdPartyCreditsDlg::OnKeyCodeTyped(vgui::KeyCode code)
 	{
 		BaseClass::OnKeyCodeTyped(code);
 	}
+}
+
+void COptionsSubAudioThirdPartyCreditsDlg::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/OptionsSubAudioThirdPartyDLG.res" );
 }

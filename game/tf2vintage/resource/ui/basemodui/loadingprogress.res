@@ -87,7 +87,7 @@
 	{
 		"ControlName"			"ProgressBar"
 		"fieldName"				"LoadingBar"
-		"xpos"					"r300"
+		"xpos"					"r220"
 		"ypos"					"r38"
 		"wide"					"200"
 		"tall"					"15"
@@ -106,7 +106,7 @@
 		"fieldName"				"LoadingSpinner"
 		"xpos"					"0"
 		"ypos"					"0"
-		"zpos"					"5"
+		"zpos"					"8"
 		"wide"					"40"
 		"tall"					"40"
 		"visible"				"0"
@@ -165,7 +165,7 @@
 	{
 		"ControlName"		"CTFMenuButton"
 		"fieldName"			"Cancel"
-		"xpos"				"r350"
+		"xpos"				"r280"
 		"ypos"				"r39"
 		"zpos"				"6"
 		"wide"				"55"

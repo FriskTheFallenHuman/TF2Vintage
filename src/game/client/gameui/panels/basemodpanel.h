@@ -29,6 +29,7 @@ class CMultiplayerAdvancedDialog;
 class COptionsDialog;
 class CCreateMultiplayerGameDialog;
 class CAchievementsDialog;
+class CCharInfoLoadoutPanel;
 
 // must supply some non-trivial time to let the movie startup smoothly
 // the attract screen also uses this so it doesn't pop in either
@@ -132,6 +133,7 @@ namespace BaseModUI
 		void SetLastActiveUserId( int userId );
 		int GetLastActiveUserId();
 
+		void OpenArmoryDialog( Panel *parent );
 		void OpenTFOptionsDialog( Panel *parent );
 		void OpenOptionsDialog( Panel *parent );
 		void OpenCreateMultiplayerGameDialog( Panel *parent );
@@ -174,6 +176,7 @@ namespace BaseModUI
 		vgui::DHANDLE<CCreateMultiplayerGameDialog> m_hCreateServerDialog;
 		vgui::DHANDLE<CAchievementsDialog> m_hAchievementsDialog;
 		vgui::DHANDLE<CMultiplayerAdvancedDialog> m_hMultiplayerAdvancedDialog;
+		vgui::DHANDLE<CCharInfoLoadoutPanel> m_hLoadoutPanelDialog;
 
 		vgui::HFont m_hDefaultFont;
 
@@ -190,8 +193,6 @@ namespace BaseModUI
 		float m_flLastBlurTime;
 
 		int m_iProductImageID;
-		int m_nProductImageWide;
-		int m_nProductImageTall;
 
 		char m_szFadeFilename[ MAX_PATH ];
 		IMaterial *m_pBackgroundMaterial;

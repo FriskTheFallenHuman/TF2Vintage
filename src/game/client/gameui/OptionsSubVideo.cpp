@@ -18,6 +18,7 @@
 #include "vgui_controls/ComboBox.h"
 #include "vgui_controls/Frame.h"
 #include "vgui_controls/QueryBox.h"
+#include "vgui_controls/PropertySheet.h"
 #include "CvarToggleCheckButton.h"
 #include "tier1/KeyValues.h"
 #include "vgui/IInput.h"
@@ -27,6 +28,10 @@
 #include "tier1/convar.h"
 #include "ModInfo.h"
 
+#ifdef _WIN32
+#include "winlite.h"
+#endif
+
 #include "inetchannelinfo.h"
 
 extern IMaterialSystem *materials;
@@ -35,6 +40,9 @@ extern IMaterialSystem *materials;
 #include "tier0/memdbgon.h"
 
 using namespace vgui;
+
+ConVar cl_windowmode( "cl_windowmode", "0", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Set the mode of the game window (fullscreen, windowed, borderless)", true, 0.0f, true, 2.0f );
+ConVar cl_unlockfovsliders( "cl_unlockfovsliders", "1", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Unlock the standard FOV up to super high settings", true, 0, true, 1 );
 
 //-----------------------------------------------------------------------------
 // Purpose: aspect ratio mappings (for normal/widescreen combo)
@@ -124,33 +132,68 @@ void GetResolutionName( vmode_t *mode, char *sz, int sizeofsz )
 	}
 }
 
+#ifdef _WIN32
+static HWND s_hWnd = NULL;
+BOOL __stdcall EnumProcs( HWND hwnd, LPARAM lParam )
+{
+	HINSTANCE inst = GetModuleHandle( NULL );
+	if ( (HINSTANCE)GetWindowLongPtr( hwnd, GWL_HINSTANCE )==inst && IsWindowVisible( hwnd ) )
+	{
+		s_hWnd=hwnd;
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static void InitWindowHandle( void )
+{
+	EnumWindows( EnumProcs, NULL );
+	if ( s_hWnd == NULL )
+		Warning( "Unable to get process handle, borderless option disabled" );
+}
+#endif // _WIN32
+
 //-----------------------------------------------------------------------------
 // Purpose: Gamma-adjust dialog
 //-----------------------------------------------------------------------------
-class CGammaDialog : public vgui::Frame
+class CGammaDialog : public vgui::PropertyDialog
 {
-	DECLARE_CLASS_SIMPLE( CGammaDialog, vgui::Frame );
+	DECLARE_CLASS_SIMPLE( CGammaDialog, vgui::PropertyDialog );
 public:
-	CGammaDialog( vgui::VPANEL hParent ) : BaseClass( NULL, NULL )
+	CGammaDialog( vgui::VPANEL hParent ) : BaseClass( NULL, "OptionsSubVideoGammaDlg" )
 	{
 		// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
-		SetTitle("#GameUI_AdjustGamma_Title", true);
+		/*SetTitle("#GameUI_AdjustGamma_Title", true);
 		SetSize( 400, 260 );
+		SetDeleteSelfOnClose( true );*/
+
+		SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" ) );
+
+		// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
+		SetProportional( true );
+		SetMoveable( false );
+		SetSizeable( false );
 		SetDeleteSelfOnClose( true );
+		SetKeyBoardInputEnabled( true );
+		SetMouseInputEnabled( true );
+		SetApplyButtonVisible( false );
+	
+		SetTitle( "", false );
 
 		m_pGammaSlider = new CCvarSlider( this, "Gamma", "#GameUI_Gamma", 1.6f, 2.6f, "mat_monitorgamma" );
-		m_pGammaLabel = new Label( this, "Gamma label", "#GameUI_Gamma" );
+		m_pGammaLabel = new Label( this, "GammaLabel", "#GameUI_Gamma" );
 		m_pGammaEntry = new TextEntry( this, "GammaEntry" );
 
-		Button *ok = new Button( this, "OKButton", "#vgui_ok" );
+		/*Button *ok = new Button( this, "OK", "#vgui_ok" );
 		ok->SetCommand( new KeyValues("OK") );
 
-		Button *cancel = new Button( this, "CancelButton", "#vgui_Cancel" );
+		Button *cancel = new Button( this, "Cancel", "#vgui_Cancel" );
 		cancel->SetCommand( new KeyValues("Close") );
 
 		LoadControlSettings( "resource/OptionsSubVideoGammaDlg.res" );
 		MoveToCenterOfScreen();
-		SetSizeable( false );
+		SetSizeable( false );*/
 
 		m_pGammaSlider->SetTickCaptions( "#GameUI_Light", "#GameUI_Dark" );
 	}
@@ -170,11 +213,40 @@ public:
 		UpdateGammaLabel();
 	}
 
-	MESSAGE_FUNC( OnOK, "OK" )
+	/*MESSAGE_FUNC( OnOK, "OK" )
 	{
 		// make the gamma stick
 		m_flOriginalGamma = m_pGammaSlider->GetValue();
 		Close();
+	}*/
+
+	virtual bool OnOK( bool applyOnly )
+	{
+		// make the gamma stick
+		m_flOriginalGamma = m_pGammaSlider->GetValue();
+		Close();
+
+		return BaseClass::OnOK( applyOnly );
+	}
+
+	//-----------------------------------------------------------------------------
+	// Purpose: Sets up the sheet
+	//-----------------------------------------------------------------------------
+	void PerformLayout()
+	{
+		// Skip PropertyDialog baseclass has we do it ourselves 
+		Frame::PerformLayout();
+
+		int iBottom = m_iSheetInsetBottom;
+		if ( IsProportional() )
+			iBottom = scheme()->GetProportionalScaledValueEx( GetScheme(), iBottom );
+
+		int x, y, wide, tall;
+		GetClientArea( x, y, wide, tall );
+		GetPropertySheet()->SetBounds( x, y, wide, tall - iBottom );
+
+		GetPropertySheet()->InvalidateLayout(); // tell the propertysheet to redraw!
+		Repaint();
 	}
 
 	virtual void OnClose()
@@ -183,6 +255,13 @@ public:
 		m_pGammaSlider->SetValue( m_flOriginalGamma );
 		m_pGammaSlider->ApplyChanges();
 		BaseClass::OnClose();
+	}
+
+	virtual void ApplySchemeSettings( IScheme *pScheme )
+	{
+		BaseClass::ApplySchemeSettings( pScheme );
+
+		LoadControlSettings( "Resource/OptionsSubVideoGammaDlg.res" );
 	}
 
 	void OnKeyCodeTyped(KeyCode code)
@@ -250,9 +329,9 @@ class COptionsSubVideoAdvancedDlg : public vgui::Frame
 public:
 	COptionsSubVideoAdvancedDlg( vgui::Panel *parent ) : BaseClass( parent , "OptionsSubVideoAdvancedDlg" )
 	{
-		SetTitle("#GameUI_VideoAdvanced_Title", true);
-		SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/SourceScheme.res", "SourceScheme" ) );
+		//SetTitle("#GameUI_VideoAdvanced_Title", true);
 		SetTitle("", false);
+		SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" ) );
 		SetSize( 260, 400 );
 
 		m_pDXLevel = new ComboBox(this, "dxlabel", 6, false );
@@ -426,10 +505,13 @@ public:
         m_pMulticore->AddItem("#gameui_disabled", NULL);
         m_pMulticore->AddItem("#gameui_enabled", NULL);
 
-        m_pFOVSlider = new CCvarSlider(this, "FovSlider", "", 90.0f, 179.0f, "fov_desired", false);
+		if ( cl_unlockfovsliders.GetBool() )
+			m_pFOVSlider = new CCvarSlider( this, "FovSlider", "#GameUI_FOV", 75.0f, 140, "fov_desired" );
+		else
+			m_pFOVSlider = new CCvarSlider( this, "FovSlider", "#GameUI_FOV", 75.0f, 90, "fov_desired" );
 
-		LoadControlSettings( "resource/OptionsSubVideoAdvancedDlg.res" );
-		MoveToCenterOfScreen();
+		//LoadControlSettings( "resource/OptionsSubVideoAdvancedDlg.res" );
+		//MoveToCenterOfScreen();
 		SetSizeable( false );
 
 		m_pDXLevel->SetEnabled(false);
@@ -465,6 +547,14 @@ public:
 			// reset the data
 			OnResetData();
 		}
+	}
+
+	void ApplySchemeSettings( vgui::IScheme *pScheme )
+	{
+		BaseClass::ApplySchemeSettings( pScheme );
+
+		LoadControlSettings( "Resource/OptionsSubVideoAdvancedDlg.res" );
+		MoveToCenterOfScreen();
 	}
 
 	void SetComboItemAsRecommended( vgui::ComboBox *combo, int iItem )
@@ -670,7 +760,11 @@ public:
 
 		ApplyChangesToConVar( "mat_dxlevel", m_pDXLevel->GetActiveItemUserData()->GetInt("dxlevel") );
 		ApplyChangesToConVar( "r_rootlod", 2 - m_pModelDetail->GetActiveItem());
-		ApplyChangesToConVar( "mat_picmip", 2 - m_pTextureDetail->GetActiveItem());
+
+		//ApplyChangesToConVar( "mat_picmip", 2 - m_pTextureDetail->GetActiveItem());
+		int nPicmip = 2 - m_pTextureDetail->GetActiveItem();
+		ApplyChangesToConVar("mat_picmip", nPicmip);
+		ApplyChangesToConVar("tf2v_mat_picmip", nPicmip - 9);
 
 		// reset everything tied to the filtering mode, then the switch sets the appropriate one
 		ApplyChangesToConVar( "mat_trilinear", false );
@@ -977,8 +1071,8 @@ COptionsSubVideo::COptionsSubVideo(vgui::Panel *parent) : PropertyPage(parent, N
 	m_pAdvanced->SetCommand(new KeyValues("OpenAdvanced"));
 	m_pBenchmark = new Button( this, "BenchmarkButton", "#GameUI_LaunchBenchmark" );
 	m_pBenchmark->SetCommand(new KeyValues("LaunchBenchmark"));
-   m_pThirdPartyCredits = new URLButton(this, "ThirdPartyVideoCredits", "#GameUI_ThirdPartyTechCredits");
-   m_pThirdPartyCredits->SetCommand(new KeyValues("OpenThirdPartyVideoCreditsDialog"));
+	m_pThirdPartyCredits = new URLButton(this, "ThirdPartyVideoCredits", "#GameUI_ThirdPartyTechCredits");
+	m_pThirdPartyCredits->SetCommand(new KeyValues("OpenThirdPartyVideoCreditsDialog"));
 
 	char pszAspectName[3][64];
 	wchar_t *unicodeText = g_pVGuiLocalize->Find("#GameUI_AspectNormal");
@@ -1012,6 +1106,7 @@ COptionsSubVideo::COptionsSubVideo(vgui::Panel *parent) : PropertyPage(parent, N
 	m_pWindowed = new vgui::ComboBox( this, "DisplayModeCombo", 6, false );
 	m_pWindowed->AddItem( "#GameUI_Fullscreen", NULL );
 	m_pWindowed->AddItem( "#GameUI_Windowed", NULL );
+	m_pWindowed->AddItem( "#GameUI_WindowedNoBorder", NULL );
 
 	LoadControlSettings("Resource/OptionsSubVideo.res");
 
@@ -1201,32 +1296,57 @@ void COptionsSubVideo::OnApplyChanges()
 
 	// resolution
 	char sz[256];
-	if ( m_nSelectedMode == -1 )
-	{
-		m_pMode->GetText(sz, 256);
-	}
-	else
-	{
+	//if ( m_nSelectedMode == -1 )
+	//{
+	//	m_pMode->GetText(sz, 256);
+	//}
+	//else
+	//{
 		m_pMode->GetItemText( m_nSelectedMode, sz, 256 );
-	}
+	//}
 	
 	int width = 0, height = 0;
-	sscanf( sz, "%i x %i", &width, &height );
+	sscanf(sz, "%i x %i", &width, &height);
 
 	// windowed
-	bool windowed = (m_pWindowed->GetActiveItem() > 0) ? true : false;
+	bool windowed = ( m_pWindowed->GetActiveItem() == 1 || m_pWindowed->GetActiveItem() == 2 );
 
 	// make sure there is a change
 	const MaterialSystem_Config_t &config = materials->GetCurrentConfigForVideoCard();
 	if ( config.m_VideoMode.m_Width != width 
 		|| config.m_VideoMode.m_Height != height
-		|| config.Windowed() != windowed)
+		|| config.Windowed() != windowed )
 	{
 		// set mode
 		char szCmd[ 256 ];
 		Q_snprintf( szCmd, sizeof( szCmd ), "mat_setvideomode %i %i %i\n", width, height, windowed ? 1 : 0 );
+		Msg( "%s", szCmd );
 		engine->ClientCmd_Unrestricted( szCmd );
 	}
+
+	if ( m_pWindowed->GetActiveItem() == 2 )
+	{
+#ifdef _WIN32
+		if ( !s_hWnd )
+			InitWindowHandle();
+
+		if ( s_hWnd != NULL )
+		{
+			DWORD style = GetWindowLong( s_hWnd, GWL_STYLE );
+			style &= ~( WS_CAPTION|WS_THICKFRAME|WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_SYSMENU );
+			SetWindowLong( s_hWnd, GWL_STYLE, style );
+
+			DWORD exStyle = GetWindowLong( s_hWnd, GWL_EXSTYLE );
+			exStyle &= ~( WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE|WS_EX_STATICEDGE );
+			SetWindowLong( s_hWnd, GWL_EXSTYLE, exStyle );
+
+			SetWindowPos( s_hWnd, 0, 0, 0, 0, 0, SWP_DRAWFRAME|SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER );
+		}
+#endif // _WIN32
+	}
+
+	if ( config.m_VideoMode.m_Width != width || config.m_VideoMode.m_Height != height || config.Windowed() != windowed )
+		BasePanel()->InvalidateFramesLayout( true, true );
 
 	// apply changes
 	engine->ClientCmd_Unrestricted( "mat_savechanges\n" );
@@ -1349,10 +1469,9 @@ void COptionsSubVideo::LaunchBenchmark()
 //-----------------------------------------------------------------------------
 void COptionsSubVideo::OpenThirdPartyVideoCreditsDialog()
 {
-   if (!m_OptionsSubVideoThirdPartyCreditsDlg.Get())
-   {
-      m_OptionsSubVideoThirdPartyCreditsDlg = new COptionsSubVideoThirdPartyCreditsDlg(GetVParent());
-   }
+   if ( !m_OptionsSubVideoThirdPartyCreditsDlg.Get() )
+      m_OptionsSubVideoThirdPartyCreditsDlg = new COptionsSubVideoThirdPartyCreditsDlg( GetVParent() );
+
    m_OptionsSubVideoThirdPartyCreditsDlg->Activate();
 }
 
@@ -1360,31 +1479,52 @@ COptionsSubVideoThirdPartyCreditsDlg::COptionsSubVideoThirdPartyCreditsDlg( vgui
 {
 	// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
 
-    SetTitle("", false);
+    /*SetTitle("", false);
     SetSize( 500, 200 );
     LoadControlSettings("Resource/OptionsSubVideoThirdPartyDLG.res");
     MoveToCenterOfScreen();
     SetSizeable(false);
-    SetDeleteSelfOnClose(true);
+    SetDeleteSelfOnClose(true);*/
+
+	SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" ) );
+
+	// parent is ignored, since we want look like we're steal focus from the parent (we'll become modal below)
+	SetProportional( true );
+	SetMoveable( false );
+	SetSizeable( false );
+	SetDeleteSelfOnClose( true );
+	SetKeyBoardInputEnabled( true );
+	SetMouseInputEnabled( true );
+	SetOKButtonVisible( false );
+	SetCancelButtonVisible( false );
+	SetApplyButtonVisible( false );
+	
+	SetTitle( "", false );
 }
 
 void COptionsSubVideoThirdPartyCreditsDlg::Activate()
 {
 	BaseClass::Activate();
 
-	input()->SetAppModalSurface(GetVPanel());
+	input()->SetAppModalSurface( GetVPanel() );
 }
 
-void COptionsSubVideoThirdPartyCreditsDlg::OnKeyCodeTyped(KeyCode code)
+void COptionsSubVideoThirdPartyCreditsDlg::OnKeyCodeTyped( KeyCode code )
 {
 	// force ourselves to be closed if the escape key it pressed
-	if (code == KEY_ESCAPE)
+	if ( code == KEY_ESCAPE )
 	{
 		Close();
 	}
 	else
 	{
-		BaseClass::OnKeyCodeTyped(code);
+		BaseClass::OnKeyCodeTyped( code );
 	}
 }
 
+void COptionsSubVideoThirdPartyCreditsDlg::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/OptionsSubVideoThirdPartyDLG.res" );
+}

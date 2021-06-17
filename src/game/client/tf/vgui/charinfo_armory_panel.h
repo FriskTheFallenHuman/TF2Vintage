@@ -1,8 +1,9 @@
 #ifndef TFMAINMENUITEMSELECTIONPANEL_H
 #define TFMAINMENUITEMSELECTIONPANEL_H
 
-#include "tf_menupanelbase.h"
+#include <vgui_controls/Frame.h>
 #include "tf_inventory.h"
+#include "tf_controls.h"
 
 class CTFWeaponSelectPanel;
 class CModelPanel;
@@ -120,31 +121,26 @@ struct _WeaponData
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-class CTFItemPanel : public CTFMenuPanelBase
+class CCharInfoArmoryPanel : public vgui::Frame
 {
-	DECLARE_CLASS_SIMPLE(CTFItemPanel, CTFMenuPanelBase);
+	DECLARE_CLASS_SIMPLE( CCharInfoArmoryPanel, vgui::Frame );
 
 public:
-	CTFItemPanel(vgui::Panel* parent, const char *panelName);
-	virtual ~CTFItemPanel();
-	bool Init();
-	void PerformLayout();
-	void ApplySchemeSettings(vgui::IScheme *pScheme);
-	void OnThink();
-	void OnTick();
-	void OnCommand(const char* command);
-	void Hide();
-	void Show();
+			CCharInfoArmoryPanel( vgui::Panel* parent, const char *panelName );
+	virtual ~CCharInfoArmoryPanel();
+
+	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
+	virtual void OnCommand( const char* command );
+	virtual void Activate();
 	void DefaultLayout();
-	void GameLayout();
-	void SetCurrentClassAndSlot(int iClass, int iSlot);
+	void SetCurrentClassAndSlot( int iClass, int iSlot );
 	void SetupItemsPage( int page );
 	void SetupItem( int iItem );
 
 private:
 	CTFWeaponSelectPanel *m_pWeaponSetPanel;
 	CUtlVector<CTFAdvItemButton*> m_pWeaponIcons;
-	//MESSAGE_FUNC(UpdateModelPanels, "ControlModified");
+
 	CExLabel *m_pItemSlotLabel;
 
 	int m_nPage;
@@ -160,12 +156,13 @@ private:
 //-----------------------------------------------------------------------------
 class CTFWeaponSelectPanel : public vgui::EditablePanel
 {
-	DECLARE_CLASS_SIMPLE(CTFWeaponSelectPanel, vgui::EditablePanel);
+	DECLARE_CLASS_SIMPLE( CTFWeaponSelectPanel, vgui::EditablePanel );
 
 public:
-	CTFWeaponSelectPanel(vgui::Panel* parent, const char *panelName);
-	void OnCommand(const char* command);
-	void ApplySettings( KeyValues *inResourceData );
+	CTFWeaponSelectPanel( vgui::Panel* parent, const char *panelName );
+
+	virtual void OnCommand( const char* command );
+	virtual void ApplySettings( KeyValues *inResourceData );
 
 	int m_nItemColumns;
 	int m_nItemRows;

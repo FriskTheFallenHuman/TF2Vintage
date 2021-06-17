@@ -14,6 +14,7 @@
 #include <vgui_controls/Panel.h>
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/PropertyPage.h>
+#include <vgui_controls/PropertyDialog.h>
 #include "EngineInterface.h"
 #include "IGameUIFuncs.h"
 #include "URLButton.h"
@@ -68,14 +69,15 @@ private:
    vgui::DHANDLE<class COptionsSubVideoThirdPartyCreditsDlg> m_OptionsSubVideoThirdPartyCreditsDlg;
 };
 
-class COptionsSubVideoThirdPartyCreditsDlg : public vgui::Frame
+class COptionsSubVideoThirdPartyCreditsDlg : public vgui::PropertyDialog
 {
-	DECLARE_CLASS_SIMPLE( COptionsSubVideoThirdPartyCreditsDlg, vgui::Frame );
+	DECLARE_CLASS_SIMPLE( COptionsSubVideoThirdPartyCreditsDlg, vgui::PropertyDialog );
 public:
 	COptionsSubVideoThirdPartyCreditsDlg( vgui::VPANEL hParent );
 
 	virtual void Activate();
-	void OnKeyCodeTyped(vgui::KeyCode code);
+	void OnKeyCodeTyped( vgui::KeyCode code );
+	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
 };
 
 

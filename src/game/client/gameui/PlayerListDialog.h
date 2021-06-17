@@ -25,6 +25,7 @@ public:
 	~CPlayerListDialog();
 
 	virtual void Activate();
+	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
 
 private:
   	MESSAGE_FUNC( OnItemSelected, "ItemSelected" );

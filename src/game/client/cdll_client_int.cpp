@@ -1173,26 +1173,30 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	InitFbx();
 #endif
 
+#ifdef TF_VINTAGE_CLIENT
+	// ------------------------------
 	// Force cl_cloud_settings to always be 0 so it doesn't use it to reset our spray
+	// ------------------------------
 	ConVar *cl_cloud_settings = nullptr;
 	cl_cloud_settings = g_pCVar->FindVar( "cl_cloud_settings" );
-	if (cl_cloud_settings)
+	if ( cl_cloud_settings )
 	{
 		cl_cloud_settings->SetValue( 0 );
 		cl_cloud_settings->SetMax( 0 );
 	}
+#endif
 
 	//if ( !CommandLine()->CheckParm( "-noscripting" ) )
 	if ( CommandLine()->CheckParm( "-vscript" ) )
 	{
-	#if defined( TF_VINTAGE_CLIENT )
+#if defined( TF_VINTAGE_CLIENT )
 		char szCwd[1024];
 		_getcwd( szCwd, sizeof( szCwd ) );
 
 		static CDllDemandLoader s_VScript( CFmtStr( "%s/tf2vintage/bin/vscript.dll", szCwd ) );
-	#else
+#else
 		static CDllDemandLoader s_VScript( "vscript.dll" );
-	#endif
+#endif
 
 		CreateInterfaceFn pAppFactory = s_VScript.GetFactory();
 		if( pAppFactory )
@@ -1216,6 +1220,12 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	}
 
 	MountAdditionalContent();
+
+#ifdef TF_VINTAGE_CLIENT
+	// Valve auto defaults to true this, but this is also need for sdk2013 so turn them on
+	engine->SetRestrictClientCommands( true );
+	engine->SetRestrictServerCommands( true );
+#endif
 
 	if ( CommandLine()->FindParm( "-textmode" ) )
 		g_bTextMode = true;
@@ -1321,9 +1331,7 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	ConVar *sv_voicecodec = NULL;
 	sv_voicecodec = g_pCVar->FindVar( "sv_voicecodec" );
 	if ( sv_voicecodec )
-	{
 		sv_voicecodec->SetValue( "vaudio_celt" );
-	}
 #endif
 
 	ClientVoiceMgr_Init();
@@ -1368,6 +1376,31 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	
 	// Swear list.
 	g_BannedWords.InitFromFile( "bannedwords.txt" );
+
+#ifdef TF_VINTAGE_CLIENT
+	// ------------------------------
+	// Turn on async loading
+	// ------------------------------
+	ConVar *mod_forcedata = NULL;
+	mod_forcedata = g_pCVar->FindVar( "mod_forcedata" );
+	if ( mod_forcedata )
+		mod_forcedata->SetValue( 0 );
+
+	ConVar *mod_load_mesh_async = NULL;
+	mod_load_mesh_async = g_pCVar->FindVar( "mod_load_mesh_async" );
+	if ( mod_load_mesh_async )
+		mod_load_mesh_async->SetValue( 1 );
+
+	ConVar *mod_load_anims_async = NULL;
+	mod_load_anims_async = g_pCVar->FindVar( "mod_load_anims_async" );
+	if ( mod_load_anims_async )
+		mod_load_anims_async->SetValue( 1 );
+
+	ConVar *mod_load_vcollide_async = NULL;
+	mod_load_vcollide_async = g_pCVar->FindVar( "mod_load_vcollide_async" );
+	if ( mod_load_vcollide_async )
+		mod_load_vcollide_async->SetValue( 1 );
+#endif
 
 	return true;
 }

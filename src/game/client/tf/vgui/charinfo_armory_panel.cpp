@@ -1,11 +1,11 @@
 #include "cbase.h"
-#include "tf_itemselectionpanel.h"
-#include "tf_mainmenu.h"
+#include "charinfo_armory_panel.h"
 #include "controls/tf_advitembutton.h"
 #include "basemodelpanel.h"
 #include <vgui/ILocalize.h>
 #include "script_parser.h"
 #include "econ_item_view.h"
+#include "ienginevgui.h"
 
 using namespace vgui;
 // memdbgon must be the last include file in a .cpp file!!!
@@ -47,7 +47,7 @@ const char *g_szEquipSlotHeader[] =
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CTFWeaponSelectPanel::CTFWeaponSelectPanel(vgui::Panel* parent, const char *panelName) : vgui::EditablePanel(parent, panelName)
+CTFWeaponSelectPanel::CTFWeaponSelectPanel(vgui::Panel* parent, const char *panelName) : vgui::EditablePanel( parent, panelName )
 {
 }
 
@@ -122,61 +122,55 @@ private:
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CTFItemPanel::CTFItemPanel(vgui::Panel* parent, const char *panelName) : CTFMenuPanelBase(parent, panelName)
+CCharInfoArmoryPanel::CCharInfoArmoryPanel( vgui::Panel* parent, const char *panelName ) : BaseClass( parent, panelName )
 {
-	Init();
-}
+	SetAutoDelete( false );
+	SetMoveable( false );
+	SetSizeable( false );
 
-//-----------------------------------------------------------------------------
-// Purpose: Destructor
-//-----------------------------------------------------------------------------
-CTFItemPanel::~CTFItemPanel()
-{
-	m_pWeaponIcons.RemoveAll();
-}
-
-bool CTFItemPanel::Init()
-{
-	BaseClass::Init();
+	HScheme Scheme = g_pVGuiSchemeManager->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ClientScheme.res", "ClientScheme" );
+	SetScheme( Scheme );
+	SetProportional( true );
 
 	m_iCurrentClass = TF_CLASS_SCOUT;
 	m_iCurrentSlot = TF_LOADOUT_SLOT_PRIMARY;
 
-	g_TFWeaponScriptParser.InitParser("scripts/tf_weapon_*.txt", true, false);
+	g_TFWeaponScriptParser.InitParser( "scripts/tf_weapon_*.txt", true, false );
 
 	char* chEmptyLoc = new char[32];
-	wchar_t *wcLoc = g_pVGuiLocalize->Find("SelectNoItemSlot");
-	sprintf(chEmptyLoc, "%ws", wcLoc);
+	wchar_t *wcLoc = g_pVGuiLocalize->Find( "SelectNoItemSlot" );
+	sprintf( chEmptyLoc, "%ws", wcLoc );
 
 	m_pWeaponSetPanel = new CTFWeaponSelectPanel( this, "weaponsetpanel" );
 	m_pItemSlotLabel = new CExLabel( this, "ItemSlotLabel", "#PrimaryWeapon" );
 
 	CTFAdvItemButton *itembutton = nullptr;
-	for (int i = 0; i < INVENTORY_VECTOR_NUM_SELECTION; i++)
+	for ( int i = 0; i < INVENTORY_VECTOR_NUM_SELECTION; i++ )
 	{
 		itembutton = new CTFAdvItemButton( m_pWeaponSetPanel, "WeaponIcons", chEmptyLoc );
 		itembutton->SetVisible( false );
 		m_pWeaponIcons.AddToTail( itembutton );
 	}
-
-	return true;
 }
 
-void CTFItemPanel::ApplySchemeSettings(vgui::IScheme *pScheme)
+//-----------------------------------------------------------------------------
+// Purpose: Destructor
+//-----------------------------------------------------------------------------
+CCharInfoArmoryPanel::~CCharInfoArmoryPanel()
+{
+	m_pWeaponIcons.RemoveAll();
+}
+
+void CCharInfoArmoryPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	LoadControlSettings("resource/UI/main_menu/itemselectionpanel.res");
+	LoadControlSettings( "Resource/UI/CharInfoArmorySubPanel.res" );
 }
 
-void CTFItemPanel::PerformLayout()
+void CCharInfoArmoryPanel::SetCurrentClassAndSlot( int iClass, int iSlot )
 {
-	BaseClass::PerformLayout();
-}
-
-void CTFItemPanel::SetCurrentClassAndSlot(int iClass, int iSlot)
-{
-	if (m_iCurrentClass != iClass)
+	if ( m_iCurrentClass != iClass )
 		m_iCurrentClass = iClass;
 
 	m_iCurrentSlot = g_aClassLoadoutSlots[iClass][iSlot];
@@ -184,17 +178,16 @@ void CTFItemPanel::SetCurrentClassAndSlot(int iClass, int iSlot)
 	DefaultLayout();
 }
 
-
-void CTFItemPanel::OnCommand(const char* command)
+void CCharInfoArmoryPanel::OnCommand( const char* command )
 {
-	if ( !Q_strcmp ( command, "back" ) || (!Q_strcmp ( command, "vguicancel" )) )
+	if ( !Q_strcmp ( command, "back" ) || ( !Q_strcmp ( command, "vguicancel" ) ) )
 	{
 		g_bShowItemMenu = false;
-		Hide ();
+		Close();
 	}
 	else if ( !Q_strncmp ( command, "loadout", 7 ) )
 	{
-		GetParent ()->OnCommand ( command );
+		GetParent()->OnCommand ( command );
 		return;
 	}
 	else if ( !Q_strcmp( command, "nextpage" ) )
@@ -219,31 +212,14 @@ void CTFItemPanel::OnCommand(const char* command)
 	}
 }
 
-void CTFItemPanel::Show()
+void CCharInfoArmoryPanel::Activate()
 {
-	BaseClass::Show();
+	BaseClass::Activate();
 	DefaultLayout();
 }
 
-void CTFItemPanel::Hide()
+void CCharInfoArmoryPanel::DefaultLayout()
 {
-	BaseClass::Hide();
-}
-
-void CTFItemPanel::OnTick()
-{
-	BaseClass::OnTick();
-}
-
-void CTFItemPanel::OnThink()
-{
-	BaseClass::OnThink();
-}
-
-void CTFItemPanel::DefaultLayout()
-{
-	BaseClass::DefaultLayout();
-
 	if ( m_iCurrentSlot != -1 )
 	{
 		int iClassIndex = m_iCurrentClass;
@@ -255,21 +231,19 @@ void CTFItemPanel::DefaultLayout()
 		{
 			CEconItemView *pItem = NULL;
 			if ( m_iCurrentSlot != -1 )
-			{
 				pItem = GetTFInventory()->GetItem( iClassIndex, m_iCurrentSlot, i );
-			}
+
 			if ( pItem )
-			{
 				itemCount++;
-			}
 		}
+
 		//DevMsg( "Total items: %d\n", itemCount );
 		m_nPageCount = Ceil2Int( itemCount / (1.0 * m_pWeaponSetPanel->m_nItemRows * m_pWeaponSetPanel->m_nItemColumns));
 		SetupItemsPage( 0 );
 	}
 }
 
-void CTFItemPanel::SetupItemsPage( int iPage )
+void CCharInfoArmoryPanel::SetupItemsPage( int iPage )
 {
 	m_nPage = iPage;
 
@@ -283,12 +257,10 @@ void CTFItemPanel::SetupItemsPage( int iPage )
 	int last = MIN( first + m_pWeaponSetPanel->m_nItemColumns * m_pWeaponSetPanel->m_nItemRows, INVENTORY_VECTOR_NUM_SELECTION );
 
 	for ( int i = first; i < last; i++ )
-	{
 		SetupItem( i );
-	}
 }
 
-void CTFItemPanel::SetupItem( int iItem )
+void CCharInfoArmoryPanel::SetupItem( int iItem )
 {
 	CTFAdvItemButton *m_pWeaponButton = m_pWeaponIcons[iItem];
 	CEconItemView *pItem = NULL;
@@ -325,9 +297,4 @@ void CTFItemPanel::SetupItem( int iItem )
 	{
 		m_pWeaponButton->SetVisible( false );
 	}
-}
-
-void CTFItemPanel::GameLayout()
-{
-	BaseClass::GameLayout();
 }

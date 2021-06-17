@@ -62,8 +62,6 @@ MainMenu::MainMenu( Panel *parent, const char *panelName ):	BaseClass( parent, p
 	if ( steamapicontext->SteamUser() )
 		m_SteamID = steamapicontext->SteamUser()->GetSteamID();
 
-	m_pBackgroundImage = new ScalableImagePanel( this, "Background" );
-
 	m_pServerlistPanel = new CServerlistPanel( this, "ServerlistPanel" );
 	m_pServerlistPanel->AddActionSignalTarget( this );
 
@@ -92,6 +90,11 @@ void MainMenu::OnCommand( const char *command )
 	{
 		CBaseModPanel::GetSingleton().OpenPlayerListDialog( this );
 	}
+	else if (  bMpOnly && !Q_strcmp( command, "CallVote" ) )
+	{
+		engine->ClientCmd( "gameui_hide" );
+		engine->ClientCmd( "callvote" );
+	}
 	else if( bMpOnly && !Q_strcmp( command, "ExitToMainMenu" ) )
 	{
 		MakeGenericDialog( "#TF_MM_Disconnect_Title", 
@@ -112,7 +115,7 @@ void MainMenu::OnCommand( const char *command )
 	}
 	else if ( !Q_stricmp( command, "QuitGame_NoConfirm" ) )
 	{
-		engine->ClientCmd( "quit" );
+		engine->ExecuteClientCmd( "quit" );
 	}
 	else if ( !Q_strcmp( command, "GameOptions" ) )
 	{
@@ -121,6 +124,10 @@ void MainMenu::OnCommand( const char *command )
 	else if ( !Q_strcmp( command, "TF2Options" ) )
 	{
 		CBaseModPanel::GetSingleton().OpenTFOptionsDialog( this );
+	}
+	else if ( !Q_strcmp( command, "Backpack" ) )
+	{
+		CBaseModPanel::GetSingleton().OpenArmoryDialog( this );
 	}
 	else if ( !Q_strcmp( command, "ServerBrowser" ) )
 	{
@@ -252,6 +259,8 @@ void MainMenu::PerformLayout( void )
 {
 	BaseClass::PerformLayout();
 
+	bool bMpOnly = GameUI().IsInLevel();
+
 	CAvatarImagePanel *m_pProfileAvatar = dynamic_cast< CAvatarImagePanel *>( FindChildByName( "AvatarImage" ) );
 	if ( m_pProfileAvatar )
 	{
@@ -263,9 +272,21 @@ void MainMenu::PerformLayout( void )
 	V_strcpy_safe( szNickName, ( steamapicontext->SteamFriends() ) ? steamapicontext->SteamFriends()->GetPersonaName() : "Unknown" );
 	SetDialogVariable( "playername", szNickName );
 
-	// if we had any current movie background playing, hidde the fake background
-	if ( BackgroundMovie() )
-		m_pBackgroundImage->SetVisible( false );
+	CTFAdvButton *m_pQuitDisconnect = dynamic_cast< CTFAdvButton *>( FindChildByName( "QuitDisconnect" ) );
+	if ( m_pQuitDisconnect )
+	{
+		m_pQuitDisconnect->SetCommandString( bMpOnly ? "ExitToMainMenu" : "QuitGame" );
+		m_pQuitDisconnect->SetText( bMpOnly ? "#GameUI_GameMenu_Disconnect" : "#GameUI_GameMenu_Quit" );
+		m_pQuitDisconnect->SetImage( bMpOnly ? "../vgui/glyph_disconnect" : "../vgui/glyph_quit" );
+	}
+
+	CTFAdvButton *m_pMute = dynamic_cast< CTFAdvButton *>( FindChildByName( "Mute" ) );
+	if ( m_pMute )
+		m_pMute->SetVisible( bMpOnly ? true : false );
+
+	CTFAdvButton *m_pVote = dynamic_cast< CTFAdvButton *>( FindChildByName( "CallVote" ) );
+	if ( m_pVote )
+		m_pVote->SetVisible( bMpOnly ? true : false );
 }
 
 //=============================================================================
@@ -290,74 +311,7 @@ void MainMenu::ApplySchemeSettings( IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings( pScheme );
 
-	bool bMpOnly = GameUI().IsInLevel();
-
-	// Setup the conditions
-	KeyValues *pConditions = NULL;
-	bool bIsHolidayOn = false;
-	const char *pszHolidayString = UTIL_GetActiveHolidayString();
-
-	// Make sure it is valid
-	if ( pszHolidayString && pszHolidayString[0] )
-	{
-		pConditions = new KeyValues( "condictions" );
-
-		char szConditionName[MAX_MAP_NAME]; // Use "MAX_MAP_NAME" to ensure we, at least we don't hit the limit
-		V_snprintf( szConditionName, sizeof( szConditionName ), "if_%s", pszHolidayString ); // Construct the condition
-		AddSubKeyNamed( pConditions, szConditionName );
-		int nHolidayBg; // Some holidays would had more than one background
-
-		// Special cases for Halloween, Xmas, MyM and Jungle Inferno
-		if ( FStrEq( pszHolidayString, "halloween" ) )
-		{
-			nHolidayBg = RandomInt( 0, 6 ); // TF2 Had 6 halloween background across all time
-			AddSubKeyNamed( pConditions, CFmtStr( "if_halloween_%d", nHolidayBg ) );
-		}
-		else if ( FStrEq( pszHolidayString, "christmas" ) )
-		{
-			nHolidayBg = RandomInt( 0, 1 ); // TF2 Had 2 xmas background across all time
-			AddSubKeyNamed( pConditions, CFmtStr( "if_christmas_%d", nHolidayBg ) );		
-		}
-
-		bIsHolidayOn = true;
-	}
-
-	// Aparrently this was used for updates?, Confirm it.
-	if ( !bIsHolidayOn )
-	{
-		if ( !pConditions )
-			pConditions = new KeyValues( "condictions" );
-
-		AddSubKeyNamed( pConditions, "if_operation" );
-	}
-
-	if ( !pConditions )
-		pConditions = new KeyValues( "condictions" );
-
-	// Setup the resolution, this is used by tf2 for stuffs like background images
-	float fCurrentAspectRation = engine->GetScreenAspectRatio();
-	AddSubKeyNamed( pConditions, fCurrentAspectRation >= 1.6 ? "if_wider" : "if_taller" );
-
-	LoadControlSettings( "resource/UI/BaseModUI/MainMenu.res", NULL, NULL, pConditions );
-
-	if ( pConditions )
-		pConditions->deleteThis();
-
-	CTFAdvButton *m_pQuitDisconnect = dynamic_cast< CTFAdvButton *>( FindChildByName( "QuitDisconnect" ) );
-	if ( m_pQuitDisconnect )
-	{
-		m_pQuitDisconnect->SetCommandString( bMpOnly ? "ExitToMainMenu" : "QuitGame" );
-		m_pQuitDisconnect->SetText( bMpOnly ? "#GameUI_GameMenu_Disconnect" : "#GameUI_GameMenu_Quit" );
-		m_pQuitDisconnect->SetImage( bMpOnly ? "../vgui/glyph_disconnect" : "../vgui/glyph_quit" );
-	}
-
-	CTFAdvButton *m_pMute = dynamic_cast< CTFAdvButton *>( FindChildByName( "Mute" ) );
-	if ( m_pMute )
-		m_pMute->SetVisible( bMpOnly ? true : false );
-
-	CTFAdvButton *m_pVote = dynamic_cast< CTFAdvButton *>( FindChildByName( "CallVote" ) );
-	if ( m_pVote )
-		m_pVote->SetVisible( bMpOnly ? true : false );
+	LoadControlSettings( "resource/UI/BaseModUI/MainMenu.res" );
 
 	CExLabel *m_pVersionLabel = dynamic_cast<CExLabel *>( FindChildByName( "VersionLabel" ) );
 	if ( m_pVersionLabel )
@@ -366,10 +320,6 @@ void MainMenu::ApplySchemeSettings( IScheme *pScheme )
 		Q_snprintf( verString, sizeof( verString ), "Version: %s", GetNotificationManager()->GetVersionString() );
 		m_pVersionLabel->SetText( verString );
 	}
-
-	// if we are currently in-game hide us
-	if ( bMpOnly )
-		m_pBackgroundImage->SetVisible( false );
 }
 
 //=============================================================================
@@ -595,7 +545,7 @@ void CServerlistPanel::UpdateServerInfo()
 		curitem->deleteThis();
 	}
 	
-//#ifdef _DEBUG
+#ifdef _DEBUG
 	if ( m_pServerList->GetItemCount() < 1 )
 	{
 		// If we don't have any servers listed, make a dummy server for the debugger.
@@ -616,16 +566,16 @@ void CServerlistPanel::UpdateServerInfo()
 		curitemDEBUG->deleteThis();
 	}
 	SetVisible( true );
-//#else
-	/*if ( m_pServerList->GetItemCount() > 0 )
+#else
+	if ( m_pServerList->GetItemCount() > 0 )
 	{
 		SetVisible( true );
 	}
 	else
 	{
 		SetVisible( false );
-	}*/
-//#endif
+	}
+#endif
 
 	int min, max;
 	m_pServerList->InvalidateLayout( 1, 0 );

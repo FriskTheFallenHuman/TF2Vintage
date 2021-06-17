@@ -28,10 +28,8 @@ using namespace vgui;
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CPlayerListDialog::CPlayerListDialog(vgui::Panel *parent) : BaseClass( parent, "MutePlayerDialog" )
+CPlayerListDialog::CPlayerListDialog(vgui::Panel *parent) : BaseClass( parent, "PlayerListDialog" )
 {
-	SetScheme( vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/ClientScheme.res", "ClientScheme" ) );
-
 	SetProportional( true );
 	SetKeyBoardInputEnabled( true );
 	SetMouseInputEnabled( true );
@@ -46,8 +44,6 @@ CPlayerListDialog::CPlayerListDialog(vgui::Panel *parent) : BaseClass( parent, "
 	m_pPlayerList->AddColumnHeader( 1, "Properties", "#GameUI_Properties", 80 );
 
 	m_pPlayerList->SetEmptyListText("#GameUI_NoOtherPlayersInGame");
-
-	LoadControlSettings( "Resource/MutePlayerDialog.res" );
 }
 
 //-----------------------------------------------------------------------------
@@ -170,6 +166,16 @@ void CPlayerListDialog::OnCommand(const char *command)
 	{
 		BaseClass::OnCommand(command);
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CPlayerListDialog::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "Resource/PlayerListDialog.res" );
 }
 
 //-----------------------------------------------------------------------------

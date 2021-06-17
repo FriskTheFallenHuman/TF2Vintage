@@ -1,0 +1,12 @@
+"TFMainMenuBackgrounds"
+{
+	"MainMenu"
+	{
+		"background_count"	"4"
+		
+		"image" "../console/background_2fort"
+		"image" "../console/background_gravelpit"
+		"image" "../console/background_upward"
+		"image" "../console/background_mvm"
+	}
+}

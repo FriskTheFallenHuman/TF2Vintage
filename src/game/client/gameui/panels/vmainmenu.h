@@ -52,9 +52,6 @@ namespace BaseModUI
 		static void AcceptQuitGameCallback();
 		static void LeaveGameOkCallback();
 
-		// Live tf2 uses ScalableImage, so lets used that here!
-		vgui::ScalableImagePanel	*m_pBackgroundImage;
-
 		CSteamID			m_SteamID;
 		CServerlistPanel	*m_pServerlistPanel;
 	};

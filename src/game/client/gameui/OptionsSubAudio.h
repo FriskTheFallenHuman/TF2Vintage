@@ -12,6 +12,7 @@
 #endif
 
 #include "vgui_controls/PropertyPage.h"
+#include "vgui_controls/PropertyDialog.h"
 #include <language.h>
 #include "vgui_controls/Frame.h"
 #include "vgui/KeyCode.h"
@@ -66,14 +67,15 @@ private:
 //-----------------------------------------------------------------------------
 // Purpose: third-party audio credits dialog
 //-----------------------------------------------------------------------------
-class COptionsSubAudioThirdPartyCreditsDlg : public vgui::Frame
+class COptionsSubAudioThirdPartyCreditsDlg : public vgui::PropertyDialog
 {
-	DECLARE_CLASS_SIMPLE( COptionsSubAudioThirdPartyCreditsDlg, vgui::Frame );
+	DECLARE_CLASS_SIMPLE( COptionsSubAudioThirdPartyCreditsDlg, vgui::PropertyDialog );
 public:
 	COptionsSubAudioThirdPartyCreditsDlg( vgui::VPANEL hParent );
 
 	virtual void Activate();
-	void OnKeyCodeTyped(vgui::KeyCode code);
+	void OnKeyCodeTyped( vgui::KeyCode code );
+	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
 };
 
 
